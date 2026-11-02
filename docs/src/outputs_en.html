@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root { --ink:#0b1220; --muted:#5b6475; --blue:#2a78d6; --orange:#eb6834; --aqua:#1baf7a; --yellow:#eda100; --line:#d6dbe4; }
+  * { box-sizing:border-box; }
+  body { margin:0; width:1600px; background:#fff; font-family:"Noto Sans CJK SC","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif; color:var(--ink); }
+  .wrap { padding:44px 56px 40px; }
+  h2 { margin:0 0 6px; font-size:34px; font-weight:800; }
+  .lead { color:var(--muted); font-size:20px; margin:0 0 26px; }
+  .grid { display:grid; grid-template-columns: 1.15fr 1fr 1fr; gap:20px; }
+  .col { display:flex; flex-direction:column; gap:16px; }
+  .panel { border:1.5px solid var(--line); border-radius:16px; overflow:hidden; background:#fff; box-shadow:0 6px 18px rgba(11,18,32,.05); }
+  .panel .h { padding:10px 14px; font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--line); background:#fafbfc; }
+  .panel .h .t { font-size:12px; font-weight:600; color:#fff; padding:2px 8px; border-radius:6px; letter-spacing:.5px; }
+  .panel img { display:block; width:100%; }
+  .pages { display:flex; gap:10px; padding:12px; background:#eef1f5; }
+  .pages img { width:calc((100% - 20px)/3); border:1px solid #cfd5df; box-shadow:0 3px 8px rgba(0,0,0,.08); }
+  .b { background:var(--blue);} .o { background:var(--orange);} .a { background:var(--aqua);} .y { background:var(--yellow);}
+  .reg { padding:12px 14px; font-size:14px; line-height:1.5; color:#1f2a3a; background:#fbfbfc; }
+  .reg td:first-child, .reg th:first-child { white-space:nowrap; font-family:ui-monospace, Menlo, Consolas, monospace; }
+  .reg table { border-collapse:collapse; width:100%; }
+  .reg th, .reg td { border:1px solid #e1e5ec; padding:4px 6px; text-align:left; vertical-align:top; }
+  .reg th { background:#eef1f5; font-weight:700; }
+  .reg .y { background:#fff6d6; color:#8a5a00; }
+  .sheet { padding:12px 14px; font-size:14px; font-variant-numeric: tabular-nums; }
+  .sheet table { border-collapse:collapse; width:100%; }
+  .sheet th, .sheet td { border:1px solid #e1e5ec; padding:4px 7px; text-align:right; }
+  .sheet th { background:#d9e1f2; text-align:center; }
+  .sheet td:first-child { text-align:left; }
+  .sheet .in { color:#0000ff; background:#fff9e5; }
+  .sheet .tot { background:#f2f2f2; font-weight:700; }
+  .cap { padding:8px 14px 10px; font-size:13px; color:var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h2>What you get: four deliverables that reconcile</h2>
+  <p class="lead">From a full test run on a fictional ceramic-membrane start-up (input: one paragraph): a 47-page plan, a 993-formula three-statement model, the register and a review memo.</p>
+  <div class="grid">
+    <div class="col">
+      <div class="panel">
+        <div class="h"><span class="t b">WORD</span>Business plan · cover / executive summary / financial plan</div>
+        <div class="pages"><img src="page_cover.png"><img src="page_exec.png"><img src="page_finance.png"></div>
+        <div class="cap">14 chapters + statement appendices; every claim tagged [A-xx] / [S-n] (strippable for the final version); [to be provided] marks what the user must add.</div>
+      </div>
+      <div class="panel">
+        <div class="h"><span class="t a">MARKDOWN</span>Assumptions &amp; evidence register · confirm line by line</div>
+        <div class="reg"><table>
+          <tr><th>ID</th><th>Item</th><th>Source / basis</th><th style="white-space:nowrap">Grade</th><th style="white-space:nowrap">Conf.</th><th style="white-space:nowrap">Confirm</th></tr>
+          <tr><td>F-04</td><td>Contracts signed in 2026 ≈ RMB 1.8m</td><td>Provided by user</td><td>A</td><td>High</td><td>No</td></tr>
+          <tr><td class="y">A-05</td><td class="y">Module ex-works price RMB 45k, −2%/yr</td><td class="y">Price range of listed peers [S2]</td><td class="y">B</td><td class="y">Med</td><td class="y">Yes</td></tr>
+          <tr><td>E-02</td><td>Domestic supply chain delivers faster than imports</td><td>Inferred from prospectus [S7]</td><td>C</td><td>Low</td><td>No</td></tr>
+          <tr><td>T-02</td><td>Flux and cleaning-cycle data from the two pilot customers</td><td>—</td><td>—</td><td>—</td><td>Yes</td></tr>
+        </table></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="panel">
+        <div class="h"><span class="t o">EXCEL</span>Three-statement model · assumptions (blue inputs) → P&amp;L / cash flow / balance sheet</div>
+        <div class="sheet"><table>
+          <tr><th style="text-align:left">Income statement (RMB 10k)</th><th>2027</th><th>2028</th><th>2029</th><th>2030</th><th>2031</th></tr>
+          <tr><td>Revenue</td><td>726.0</td><td>2,339.4</td><td>4,522.8</td><td>6,751.1</td><td>8,930.9</td></tr>
+          <tr><td>Gross margin</td><td>27.9%</td><td>31.4%</td><td>36.2%</td><td>38.8%</td><td>40.3%</td></tr>
+          <tr><td>EBITDA</td><td>-525.3</td><td>-181.1</td><td>145.3</td><td>748.2</td><td>1,401.4</td></tr>
+          <tr class="tot"><td>Net income</td><td>-645.3</td><td>-391.7</td><td>-120.9</td><td>413.7</td><td>1,065.7</td></tr>
+          <tr><td>Closing cash</td><td>634.4</td><td>1,106.0</td><td>1,324.6</td><td>1,969.1</td><td>2,873.3</td></tr>
+          <tr><td>Balance check (must be 0)</td><td>0.00</td><td>0.00</td><td>0.00</td><td>0.00</td><td>0.00</td></tr>
+        </table></div>
+        <div class="cap">Type 1 / 2 / 3 in the scenario cell and the whole workbook recalculates; the scenario sheet is written by the script; a monthly sheet shows first-year cash rhythm.</div>
+      </div>
+      <div class="panel">
+        <div class="h"><span class="t o">EXCEL → PNG</span>Scenario comparison</div>
+        <img src="chart_scenarios_en.png">
+      </div>
+    </div>
+    <div class="col">
+      <div class="panel">
+        <div class="h"><span class="t b">CHART</span>Revenue and net income forecast (cited in the text)</div>
+        <img src="chart_revenue_en.png">
+      </div>
+      <div class="panel">
+        <div class="h"><span class="t y">SENSITIVITY</span>Single-factor tornado: NPV and minimum cash</div>
+        <img src="chart_sensitivity_en.png">
+      </div>
+      <div class="panel">
+        <div class="h"><span class="t a">CHECK</span>check_consistency.py</div>
+        <div class="reg">✅ Year-1 (2027) revenue: text shows `726.0`<br>✅ Final-year (2031) net income: text shows `1,065.7`<br>✅ Project IRR (with TV): text shows `50.4%`<br>✅ Min. DSCR (2 dp): text shows `2.56`<br>⚠ 13 figures to review (valuation multiples, industry data)</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: eu-startup-series-a-grant
+expected_outcome: |
+  An English investor-grade business plan (.docx), EUR Excel model and ~12-slide pitch deck for a Dutch textile-to-rPET
+  start-up raising a €4m Series A with an EU/Dutch grant. Research cites EU regulatory drivers (textile EPR under the
+  Waste Framework Directive revision, PPWR recycled-content targets, ESPR) with sources, and checks which grant schemes
+  fit (EIC Accelerator, RVO DEI+ or similar) rather than inventing eligibility. Model in €k with phased capex and
+  in-service year, grants as non-equity capital, scenarios and sensitivity; unit economics (€/t) and use of funds;
+  unknown cost data registered as assumptions; consistency check passes.

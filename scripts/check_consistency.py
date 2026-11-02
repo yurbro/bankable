@@ -34,6 +34,11 @@ def load_text(path):
         return f.read()
 
 
+def _is_thousand_unit(unit):
+    u = (unit or "").lower()
+    return "千" in u or u.endswith("k") or "thousand" in u or u in ("£k", "€k", "$k", "k")
+
+
 def _find(text, s, needs_yi=False):
     """在正文中找数字写法：前后不能紧邻其他数字/小数点；亿元变体必须紧跟“亿”，million 变体必须紧跟 million。"""
     if needs_yi == "million":
@@ -67,6 +72,9 @@ def money_variants(v, unit):
     if unit == "万元" and abs(v) >= 10:
         for d in (1, 2):
             out.add((f"{v / 100:,.{d}f}", "million"))  # 英文 RMB xx.x million 写法
+    if _is_thousand_unit(unit) and abs(v) >= 100:
+        for d in (1, 2):
+            out.add((f"{v / 1000:,.{d}f}", "million"))  # £k / €k / $k 口径的 x.x million / x.xm 写法
     if v < 0:  # 负数去掉符号的写法（“亏损 47.8 万元”）
         out |= money_variants(-v, unit)
     return out
@@ -195,7 +203,8 @@ def find_in_text(text, variants):
     return None
 
 
-NUM_TOKEN_RE = re.compile(r"(-?\d[\d,]*\.?\d*)\s*(亿元|万元|亿|万|%|％|倍|x(?![a-z])|million|billion)", re.I)
+NUM_TOKEN_RE = re.compile(r"(-?\d[\d,]*\.?\d*)\s*(亿元|万元|亿|万|%|％|倍|x(?![a-z])|million|billion|bn\b|m\b|k\b)", re.I)
+CURRENCY_RE = re.compile(r"(?:£|€|\$|GBP|EUR|USD|RMB|CNY)\s?(-?\d[\d,]*\.?\d*)\s*(million|billion|bn\b|m\b|k\b)?", re.I)
 SOURCED_RE = re.compile(r"\[(?:[FAETS]-?\d+|S\d+)")
 
 
@@ -225,6 +234,34 @@ def collect_extra_numbers(path, money, pct, ratio):
         elif isinstance(node, (int, float)) and not isinstance(node, bool):
             classify(key, node)
     walk(data)
+
+
+def to_model_unit(v, u, unit):
+    """把正文中的金额写法换算到模型单位。"""
+    ul = (u or "").lower()
+    if unit == "万元":
+        if ul in ("亿元", "亿"):
+            return v * 10000
+        if ul in ("million", "m"):
+            return v * 100
+        if ul in ("billion", "bn"):
+            return v * 100000
+        return v
+    if _is_thousand_unit(unit):
+        if ul in ("million", "m"):
+            return v * 1000
+        if ul in ("billion", "bn"):
+            return v * 1000000
+        if ul == "k":
+            return v
+        return v
+    if ul in ("million", "m"):
+        return v * 1000000
+    if ul in ("billion", "bn"):
+        return v * 1000000000
+    if ul == "k":
+        return v * 1000
+    return v
 
 
 def main():
@@ -288,8 +325,15 @@ def main():
     suspicious = []
     checked = 0
     sourced = 0
-    for m in NUM_TOKEN_RE.finditer(scan):
-        raw, u = m.group(1), m.group(2)
+    tokens = [(m.start(), m.end(), m.group(1), m.group(2)) for m in NUM_TOKEN_RE.finditer(scan)]
+    for m in CURRENCY_RE.finditer(scan):
+        tokens.append((m.start(), m.end(), m.group(1), m.group(2) or ""))
+    seen_spans = set()
+    for start, end, raw, u in sorted(tokens):
+        if any(s0 <= start < e0 for s0, e0 in seen_spans):
+            continue
+        seen_spans.add((start, end))
+        m = type("M", (), {"start": lambda self, s=start: s, "end": lambda self, e=end: e})()
         try:
             v = float(raw.replace(",", ""))
         except ValueError:
@@ -306,16 +350,11 @@ def main():
         elif u in ("倍", "x"):
             ok = any(abs(v - r) <= 0.011 for r in ratio_vals if r is not None)
         else:
-            ul = u.lower()
-            if ul in ("亿元", "亿") and unit == "万元":
-                cand = v * 10000
-            elif ul == "million" and unit == "万元":
-                cand = v * 100
-            elif ul == "billion" and unit == "万元":
-                cand = v * 100000
-            else:
-                cand = v
-            ok = any(abs(cand - mv) <= max(args.tolerance * abs(mv), 0.6) for mv in money_vals if mv is not None)
+            cand = to_model_unit(v, u, unit)
+            cands = [cand]
+            if (u or "") == "" and _is_thousand_unit(unit):
+                cands.append(v / 1000)  # "£450,000" 写成全额
+            ok = any(abs(c - mv) <= max(args.tolerance * abs(mv), 0.6) for c in cands for mv in money_vals if mv is not None)
         if not ok:
             ctx_start = max(0, m.start() - 25)
             ctx = scan[ctx_start:m.end() + 15].replace("\n", " ")

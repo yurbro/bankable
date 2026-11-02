@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root { --ink:#0b1220; --muted:#5b6475; --blue:#2a78d6; --orange:#eb6834; --aqua:#1baf7a; --yellow:#eda100; --line:#d6dbe4; }
+  * { box-sizing:border-box; }
+  body { margin:0; width:1600px; background:#fff; font-family:"Noto Sans CJK SC","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif; color:var(--ink); }
+  .wrap { padding:44px 56px 40px; }
+  h2 { margin:0 0 6px; font-size:34px; font-weight:800; }
+  .lead { color:var(--muted); font-size:20px; margin:0 0 28px; }
+  .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; }
+  .card { border:1.5px solid var(--line); border-radius:18px; padding:20px 22px 18px; background:#fff; }
+  .card h3 { margin:0 0 4px; font-size:24px; display:flex; align-items:center; gap:10px; }
+  .dot { width:14px; height:14px; border-radius:50%; display:inline-block; }
+  .q { font-size:19px; font-weight:700; margin:10px 0 12px; line-height:1.4; }
+  .q small { display:block; font-weight:500; color:var(--muted); font-size:14px; margin-bottom:2px; }
+  ul { margin:0; padding-left:18px; font-size:16px; line-height:1.6; color:#223; }
+  .kpi { margin-top:12px; padding-top:10px; border-top:1px dashed var(--line); font-size:15px; color:var(--muted); line-height:1.5; }
+  .kpi b { color:var(--ink); margin-right:6px; }
+  .note { margin-top:22px; border-radius:14px; background:#f6f7f9; padding:14px 18px; font-size:17px; line-height:1.55; }
+  .note b { color:var(--blue); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h2>Reader-aware: one model, different chapter weights and metrics</h2>
+  <p class="lead">Pick the primary reader first: it decides the first sentence of the executive summary and which chapters expand. Other readers get a tailored summary plus dedicated chapters. Never two sets of numbers.</p>
+  <div class="grid">
+    <div class="card">
+      <h3><span class="dot" style="background:var(--blue)"></span>Equity investors</h3>
+      <div class="q"><small>First question</small>Why is this a good business, why you, why now?</div>
+      <ul><li>Bottom-up TAM / SAM / SOM</li><li>Moat and competitive matrix</li><li>Unit economics and traction</li><li>Use of funds, milestones, valuation logic</li></ul>
+      <div class="kpi"><b>Metrics</b>Revenue CAGR · gross margin · EBITDA break-even year · CAC/LTV · runway · IRR (with terminal value)</div>
+    </div>
+    <div class="card">
+      <h3><span class="dot" style="background:var(--orange)"></span>Banks / lenders</h3>
+      <div class="q"><small>First question</small>How is the loan repaid — and what if it isn't?</div>
+      <ul><li>Repayment source, DSCR by year</li><li>Borrower standing, historical financials</li><li>Use of proceeds, collateral, mitigants</li><li>Conservative case and 12-month cash flow</li></ul>
+      <div class="kpi"><b>Metrics</b>DSCR ≥ 1.2–1.5 · interest coverage · debt-to-asset · minimum cash · downside repayment capacity</div>
+    </div>
+    <div class="card">
+      <h3><span class="dot" style="background:var(--aqua)"></span>Government grants / parks</h3>
+      <div class="q"><small>First question</small>Why support it — which policy does it serve, what benefits does it bring?</div>
+      <ul><li>Policy basis (document and clause)</li><li>Scope, total investment, funding incl. matching funds</li><li>Quantified economic / social / environmental benefits</li><li>Performance targets and schedule</li></ul>
+      <div class="kpi"><b>Metrics</b>Total investment · investment intensity · output and tax at full capacity · jobs · energy and emissions · payback · matching ratio</div>
+    </div>
+    <div class="card">
+      <h3><span class="dot" style="background:var(--yellow)"></span>Boards / partners</h3>
+      <div class="q"><small>First question</small>Should we do it, with what resources, what if we don't, what if it fails?</div>
+      <ul><li>One-sentence decision request</li><li>Alternatives compared (incl. not proceeding)</li><li>Resources, budget, decision gates</li><li>Risks and stop-loss conditions</li></ul>
+      <div class="kpi"><b>Metrics</b>NPV · IRR · payback · peak funding · ±20% sensitivity · impact on group cash</div>
+    </div>
+  </div>
+  <div class="note"><b>Several readers</b>One master document for the primary reader → a one-page tailored summary per secondary reader → add "debt service and collateral" for banks, "policy basis + benefits and performance table" for government, "alternatives and decision request" for boards.</div>
+</div>
+</body>
+</html>

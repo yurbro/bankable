@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root { --ink:#0b1220; --muted:#5b6475; --blue:#2a78d6; --orange:#eb6834; --aqua:#1baf7a; --line:#d6dbe4; }
+  * { box-sizing:border-box; }
+  body { margin:0; width:1600px; background:#fff; font-family:"Noto Sans CJK SC","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif; color:var(--ink); }
+  .wrap { padding:44px 56px 36px; }
+  h2 { margin:0 0 6px; font-size:34px; font-weight:800; }
+  .lead { color:var(--muted); font-size:20px; margin:0 0 30px; }
+  .steps { display:grid; grid-template-columns:repeat(8, 1fr); gap:14px; position:relative; }
+  .step { border:1.5px solid var(--line); border-radius:16px; padding:16px 14px 14px; background:#fff; min-height:232px; position:relative; }
+  .step .n { position:absolute; top:-14px; left:14px; width:30px; height:30px; border-radius:50%; background:var(--ink); color:#fff; font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .step h3 { margin:8px 0 8px; font-size:21px; }
+  .step p { margin:0; font-size:14px; line-height:1.5; color:var(--muted); }
+  .step.model { border-color:var(--blue); background:#f3f8ff; }
+  .step.model h3 { color:var(--blue); }
+  .step.check { border-color:var(--orange); background:#fff6f1; }
+  .step.check h3 { color:var(--orange); }
+  .loop { margin-top:22px; display:flex; align-items:center; gap:14px; }
+  .loop .bar { flex:1; height:3px; background:linear-gradient(90deg, var(--blue), var(--orange)); border-radius:2px; position:relative; }
+  .loop .bar:after { content:""; position:absolute; right:-2px; top:-6px; border:8px solid transparent; border-left:12px solid var(--orange); }
+  .loop span { font-size:17px; color:var(--ink); white-space:nowrap; }
+  .loop b { color:var(--blue); }
+  .rules { margin-top:26px; display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .rule { border-radius:14px; padding:16px 18px; background:#f6f7f9; font-size:17px; line-height:1.55; }
+  .rule b { display:block; font-size:18px; margin-bottom:4px; }
+  .tags { margin-top:8px; font-size:15px; color:var(--muted); }
+  code { font-family:ui-monospace, Menlo, Consolas, monospace; background:#eef1f5; padding:1px 6px; border-radius:6px; font-size:14px; color:#1f2a3a; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h2>Workflow: numbers before narrative</h2>
+  <p class="lead">Eight steps, each loading only the reference it needs. The financial model runs first; the narrative may quote only numbers the model produced.</p>
+  <div class="steps">
+    <div class="step"><div class="n">0</div><h3>Take stock</h3><p>Read every input; fix the primary reader, stage, deliverables and tooling</p></div>
+    <div class="step"><div class="n">1</div><h3>Interview</h3><p>One round, max 8 questions, only what the inputs lack; absent user → defensible assumptions</p></div>
+    <div class="step"><div class="n">2</div><h3>Register</h3><p>F facts / A assumptions / E inferences / T to-provide, with source, evidence grade, confidence, confirm flag</p></div>
+    <div class="step"><div class="n">3</div><h3>Research</h3><p>Official statistics, policy texts, comparable filings; bottom-up market sizing; sources tagged [S-n]</p></div>
+    <div class="step model"><div class="n">4</div><h3>Model</h3><p>assumptions.json → Excel 3 statements → LibreOffice recalc → 3 scenarios + sensitivity → model_outputs.json</p></div>
+    <div class="step"><div class="n">5</div><h3>Draft</h3><p>15 chapters weighted by reader; claims tagged [A-xx][S-n]; figures only from model output</p></div>
+    <div class="step check"><div class="n">6</div><h3>Check &amp; review</h3><p>Script checks narrative vs model; red-team questions from investor / credit / government / CFO; review memo</p></div>
+    <div class="step"><div class="n">7</div><h3>Deliver</h3><p>Word (zh/en), Excel, PPT, register + delivery note: assumptions to confirm, gaps, model conclusions, limits</p></div>
+  </div>
+  <div class="loop"><span><b>Iterate</b>: a chapter reveals a constraint (capacity, payment terms, permits) → change the assumption → rerun step 4 → update the text</span><div class="bar"></div><span>Never hand-edit outputs</span></div>
+  <div class="rules">
+    <div class="rule"><b>No fabrication</b>Company history, customers, contracts, licences and team bios come only from the user's material — otherwise <code>[to be provided]</code>; market and policy data need a source or are marked <code>[to verify]</code>.</div>
+    <div class="rule"><b>Numbers reconcile</b>The balance sheet balances by construction; every financial figure in the text equals the model output; <code>check_consistency.py</code> catches "forecast" numbers the model never produced.</div>
+    <div class="rule"><b>Reader-aware</b>One model, different metrics: investors see CAGR / IRR, banks DSCR / downside, government reviewers benefit and performance indicators, boards NPV / alternatives.</div>
+  </div>
+</div>
+</body>
+</html>

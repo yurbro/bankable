@@ -1,0 +1,11 @@
+schema_version: "1.1"
+name: uk-farm-bank-loan-grant
+expected_outcome: |
+  An English, lender-oriented business plan (.docx) and GBP Excel model for an existing UK dairy farm partnership
+  taking a £2.2m 15-year loan with Defra capital grants. The model is built in £k from the CSV opening balance sheet
+  (existing loan ~£560k at ~6.5%, ~9 years left), includes the new loan, grants as non-equity capital, herd expansion
+  and milk-price sensitivity, and reports DSCR by year (base and downside). The plan uses UK conventions (GBP, FY,
+  HMRC/Defra terms, milk price in ppl), marks unknowns (security, grant scheme details, exact quotes) as to-be-provided,
+  and the consistency check passes.
+context:
+  scaffold_script: place-files.sh
