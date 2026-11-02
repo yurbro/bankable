@@ -77,6 +77,8 @@ headcount[]                      人员（成本 = 人数 × 人均年成本）
 capex[]                          资本开支
   name, amount, year             year = 第几个预测年（1 起）
   life_years, salvage_pct        折旧年限、残值率（默认 0）
+  in_service_year                投用年份（默认 = year）。建设期 18 个月、分两年付款的项目：两笔都填 in_service_year = 投产年，
+                                 投用前计入“在建工程”，不折旧；投用年起直线折旧
 
 working_capital
   ar_days, inventory_days, ap_days, other_current_assets_pct
@@ -85,11 +87,14 @@ working_capital
 financing
   equity[]: {year, amount, note}
   grants[]: {year, amount, note}  政府补助 / 不占股资本投入：计入筹资现金流与资本公积，不计税
-            （收益性补助或按递延收益分摊的，在正文说明口径；若想当作收入，改放 revenue_lines）
-  loans[]:  {id, name, amount, year, rate, term_years, grace_years, schedule?}
-            默认等额本金；宽限期内只付息；还本年份 = 提款年+宽限期 … 提款年+期限−1
+            会计口径说明：与资产相关的政府补助在报表上通常先计入“递延收益”再随折旧分期转入损益，本模型简化为资本公积，
+            对现金流与偿债能力无影响，但利润表少了分期确认的其他收益——正文脚注说明即可；收益性补助若要当收入，改放 revenue_lines。
+            补助能否到位是不确定事项：用敏感性案例 {"patch": "json", "path": "financing.grants", "value": []} 跑“无补助”情形并在风险章披露
+  loans[]:  {id, name, amount, year, rate, term_years, grace_years, schedule?, drawdown?}
+            默认提款年一次提足、等额本金；宽限期内只付息；还本年份 = 提款年+宽限期 … 提款年+期限−1
             schedule（可选）= 长度 years 的数组，各预测年偿还本金，合计须等于 amount；
             到期一次还本就只在最后一年填金额；给了 schedule 则忽略 term/grace 的还本规则（利息仍按余额计）
+            drawdown（可选）= 长度 years 的数组，分期提款（按建设进度），合计须等于 amount；分期提款必须同时给 schedule
   dividend_payout                分红比例（占正净利润），默认 0
   use_of_funds[]                 {name, amount}，用于资金用途图与融资章节，不参与计算
 
@@ -178,7 +183,14 @@ python scripts/run_sensitivity.py work/assumptions.json -o work/sensitivity_outp
  {"id": "trough", "label": "价格低谷两年", "driver": "price", "mult": 0.9}]
 ```
 
-"有项目 / 无项目"对比（存量企业扩建、银行要看增量现金流）仍需复制假设文件去掉项目部分单独跑，然后在正文做增量 EBITDA / 增量本息的对比表。
+整套备选方案（内部版第 15 章"同一套指标比较"，或存量企业的"有项目 / 无项目"对比）：复制假设文件改成方案 B、方案 C（或去掉项目部分），然后
+
+```bash
+python scripts/run_sensitivity.py work/assumptions.json -o work/sensitivity_outputs.json \
+  --variants 方案B=work/alt/assumptions_B.json 无项目=work/alt/assumptions_noproject.json --md work/sensitivity.md
+```
+
+备选方案会作为附加情形列入同一张表（末年收入、累计净利润、最低现金、资金缺口、IRR、股权 IRR、NPV、经营期 DSCR），增量 EBITDA / 增量本息之类的派生指标用两套输出相减得到并写进 extra JSON 供核对。
 
 ## 模型输出 model_outputs.json
 
@@ -220,6 +232,10 @@ use_of_funds, scenario_labels（传入 --assumptions 时）
 | IRR 为空且无说明 | 现金流全为负或无符号变化 | 检查期末价值设置；项目可能确实不可行 |
 | 回收期 null | 预测期内未回收 | 正文写"超出预测期"，考虑延长预测年数或说明长期逻辑 |
 
+**建设期与可研口径的总投资**：有建设期（首年无收入）的项目，`derived` 会给出 `construction_years`、`construction_period_interest`（建设期利息，模型按费用处理、未资本化）、`initial_working_capital`（首个经营年的营运资金占用）和 `total_investment_feasibility = 建设投资 + 建设期利息 + 铺底流动资金`，以及 `funding_sources_total` 与分项。政府版第 12 章的“总投资与资金筹措”表直接用这些数（`make_tables.py` 的 T7），并说明口径差异：用户口中的“总投资 1.2 亿”通常只是建设投资，而融资总额还要覆盖建设期亏损和爬坡期营运资金，两者差多少、靠什么覆盖，要写清楚；脚本在差异超过 15% 时会警告。`use_of_funds` 合计与资金来源合计不一致时也会警告——资金用途表必须与融资方案对得上。
+
+**DSCR 的两个口径**：`summary.dscr_min` 是全部年份的最低值（建设期、宽限期 EBITDA 为负时会出现 −7 之类的数字，对读者无意义）；`derived.dscr_min_operating` 只看有还本的经营期年份。正文和核对脚本都用经营期口径，并写明“经营期（20XX–20XX 年）最低 DSCR”。
+
 **流动比率的口径**：模型的流动比率 = 流动资产 ÷（应付账款 + 一年内到期借款），其中一年内到期借款取次年应还本金（资产负债表有备查行）。正文引用时写明口径；银行自己的口径可能还包含应付职工薪酬、应交税费等，差异在登记册说明。
 
 ## 各类读者看哪些指标
@@ -233,7 +249,9 @@ use_of_funds, scenario_labels（传入 --assumptions 时）
 
 ## 把数字写进正文
 
-- 只用 `narrative_numbers` 或 `series/summary` 里的值；四舍五入到整数万元或一位小数，全篇统一。
+- 表格不要手敲：`python scripts/make_tables.py work/model_outputs.json -o work/tables.md --sensitivity work/sensitivity_outputs.json`
+  生成关键指标、三表、偿债、三情景、资金来源与总投资、敏感性、分产品线、月度现金共 10 张 Markdown 表，复制进 plan.md 即可；英文版加 `--lang en`（默认换算为 RMB million，`--unit 万元` 可保留原单位）。
+- 只用 `narrative_numbers` 或 `series/summary/derived` 里的值；四舍五入到整数万元或一位小数，全篇统一。
 - 写口径："基准情景下""含期末价值""不含增值税"。
 - 百分比一位小数；倍数两位小数；年份写公元年。
 - 表格里的年度数字与 `series` 一一对应，不要在表格里手算合计。

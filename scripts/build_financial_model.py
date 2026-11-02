@@ -185,6 +185,9 @@ def validate(a):
             _err(errors, p + ".year", f"投入年份应为 1–{n} 的整数（第几个预测年）")
         if not _num(c.get("life_years")) or c.get("life_years", 0) <= 0:
             _err(errors, p + ".life_years", "折旧年限必须是正数")
+        isy = c.get("in_service_year")
+        if isy is not None and (not isinstance(isy, int) or (isinstance(y, int) and isy < y) or isy > n):
+            _err(errors, p + ".in_service_year", f"投用年份应为 ≥ 投入年份且 ≤ {n} 的整数（建设期资产先计入在建工程，投用年起折旧）")
 
     wc = a.get("working_capital", {}) or {}
     for k in ("ar_days", "inventory_days", "ap_days"):
@@ -220,6 +223,14 @@ def validate(a):
                 _err(errors, p + ".schedule", f"还本计划应为长度 {n} 的数组（各预测年偿还本金；到期一次还本则只在最后一年填金额）")
             elif _num(l.get("amount")) and abs(sum(sch) - float(l["amount"])) > 0.5:
                 _err(errors, p + ".schedule", f"还本计划合计 {sum(sch):,.1f} ≠ 贷款金额 {l['amount']:,.1f}")
+        dd = l.get("drawdown")
+        if dd is not None:
+            if not (isinstance(dd, list) and len(dd) == n and all(_num(x) for x in dd)):
+                _err(errors, p + ".drawdown", f"提款计划应为长度 {n} 的数组（各预测年提款额）")
+            elif _num(l.get("amount")) and abs(sum(dd) - float(l["amount"])) > 0.5:
+                _err(errors, p + ".drawdown", f"提款计划合计 {sum(dd):,.1f} ≠ 贷款金额 {l['amount']:,.1f}")
+            elif sch is None:
+                _err(errors, p + ".drawdown", "分期提款时请同时给出 schedule（还本计划），等额本金规则不适用于分期提款")
     payout = fin.get("dividend_payout", 0)
     if not _num(payout) or payout < 0 or payout > 1:
         _err(errors, "financing.dividend_payout", "分红比例应在 0–1 之间")
@@ -529,21 +540,23 @@ def build(a, out_path):
 
     S.section("资本开支假设")
     r = S.r
-    for j, h in enumerate(["项目", "金额", "投入年序", "折旧年限", "残值率"]):
+    for j, h in enumerate(["项目", "金额", "投入年序", "折旧年限", "残值率", "投用年序"]):
         c = ws.cell(row=r, column=1 + j, value=h)
         c.font = F_BOLD
         c.fill = FILL_HEADER
     S.r += 1
+    S.note("投用年序 = 开始折旧的年份；晚于投入年时，中间年份计入在建工程（建设期）。")
     capex_refs = []
     for c_item in a.get("capex", []) or []:
         r = S.r
         ws.cell(row=r, column=1, value=c_item["name"]).font = F_CALC
-        for j, (v, fmt) in enumerate([(float(c_item["amount"]), MONEY), (int(c_item["year"]), "0"), (float(c_item["life_years"]), "0.0"), (float(c_item.get("salvage_pct", 0.0)), PCT)]):
+        isy = int(c_item.get("in_service_year") or c_item["year"])
+        for j, (v, fmt) in enumerate([(float(c_item["amount"]), MONEY), (int(c_item["year"]), "0"), (float(c_item["life_years"]), "0.0"), (float(c_item.get("salvage_pct", 0.0)), PCT), (isy, "0")]):
             cell = ws.cell(row=r, column=2 + j, value=v)
             cell.number_format = fmt
             cell.font = F_INPUT
             cell.fill = FILL_INPUT
-        capex_refs.append({"name": c_item["name"], "amount": f"'假设'!$B${r}", "year": f"'假设'!$C${r}", "life": f"'假设'!$D${r}", "salvage": f"'假设'!$E${r}"})
+        capex_refs.append({"name": c_item["name"], "amount": f"'假设'!$B${r}", "year": f"'假设'!$C${r}", "life": f"'假设'!$D${r}", "salvage": f"'假设'!$E${r}", "in_service": f"'假设'!$F${r}"})
         S.r += 1
     S.blank()
 
@@ -610,8 +623,11 @@ def build(a, out_path):
         for j, (v, fmt) in enumerate(vals):
             c = ws.cell(row=r, column=2 + j, value=v)
             c.font = F_INPUT; c.fill = FILL_INPUT; c.number_format = fmt
-        loan_refs.append({"name": l.get("name", "借款"), "amount": f"'假设'!$B${r}", "year": f"'假设'!$C${r}", "rate": f"'假设'!$D${r}", "term": f"'假设'!$E${r}", "grace": f"'假设'!$F${r}", "schedule": None})
+        loan_refs.append({"name": l.get("name", "借款"), "amount": f"'假设'!$B${r}", "year": f"'假设'!$C${r}", "rate": f"'假设'!$D${r}", "term": f"'假设'!$E${r}", "grace": f"'假设'!$F${r}", "schedule": None, "drawdown": None})
         S.r += 1
+        if l.get("drawdown") is not None:
+            rr = S.row(f"   {l.get('name', '借款')} — 提款计划（按年）", [float(x) for x in l["drawdown"]], unit=unit, fmt=MONEY, kind="input")
+            loan_refs[-1]["drawdown"] = [f"'假设'!${cols[i]}${rr}" for i in range(n)]
         if l.get("schedule") is not None:
             rr = S.row(f"   {l.get('name', '借款')} — 还本计划（按年）", [float(x) for x in l["schedule"]], unit=unit, fmt=MONEY, kind="input")
             loan_refs[-1]["schedule"] = [f"'假设'!${cols[i]}${rr}" for i in range(n)]
@@ -730,23 +746,34 @@ def build(a, out_path):
         capex_rows.append(rr)
     capex_total = C.row("资本开支合计", [("=" + "+".join(f"{cols[i]}{r}" for r in capex_rows)) if capex_rows else 0 for i in range(n)], unit=unit, total=True, key="capex")
     C.blank()
-    C.section("折旧")
+    C.section("在建工程（投入后、投用前的资产）")
+    cip_rows = []
+    for c_item in capex_refs:
+        f = [f"=IF(AND({cols[i]}$4>={c_item['year']},{cols[i]}$4<{c_item['in_service']}),{c_item['amount']},0)" for i in range(n)]
+        cip_rows.append(C.row(f"在建：{c_item['name']}", f, unit=unit))
+    cip_total = C.row("在建工程合计（年末）", [("=" + "+".join(f"{cols[i]}{r}" for r in cip_rows)) if cip_rows else 0 for i in range(n)], unit=unit, total=True, key="construction_in_progress")
+    C.blank()
+    C.section("折旧（自投用年起，直线法）")
     dep_rows = []
     for c_item in capex_refs:
-        # 从投入年起折旧 life 年；残值不折旧
-        f = [f"=IF(AND({cols[i]}$4>={c_item['year']},{cols[i]}$4<{c_item['year']}+{c_item['life']}),{c_item['amount']}*(1-{c_item['salvage']})/{c_item['life']},0)" for i in range(n)]
+        f = [f"=IF(AND({cols[i]}$4>={c_item['in_service']},{cols[i]}$4<{c_item['in_service']}+{c_item['life']}),{c_item['amount']}*(1-{c_item['salvage']})/{c_item['life']},0)" for i in range(n)]
         dep_rows.append(C.row(f"折旧：{c_item['name']}", f, unit=unit))
     dep_exist = C.row("折旧：期初固定资产", [f"=IF(AND({ob_ref['fixed_assets_remaining_life']}>0,{cols[i]}$4<={ob_ref['fixed_assets_remaining_life']}),{ob_ref['fixed_assets_net']}/{ob_ref['fixed_assets_remaining_life']},0)" for i in range(n)], unit=unit)
     dep_total = C.row("折旧与摊销合计", [f"={'+'.join(f'{cols[i]}{r}' for r in dep_rows + [dep_exist])}" for i in range(n)], unit=unit, total=True, key="depreciation")
     C.blank()
     C.section("固定资产")
-    fa_open = C.row("期初固定资产净值", [f"={ob_ref['fixed_assets_net']}"] + [f"={cols[i-1]}{{close}}" for i in range(1, n)], unit=unit)
-    fa_close = C.row("期末固定资产净值", [f"={cols[i]}{fa_open}+{cols[i]}{capex_total}-{cols[i]}{dep_total}" for i in range(n)], unit=unit, total=True, key="fixed_assets_net")
+    C.note("固定资产净值 = 期初 + 本年投入 − 本年折旧 − 在建工程年末余额变动（投用时从在建工程转入）。")
+    fa_open = C.row("期初固定资产净值（含在建）", [f"={ob_ref['fixed_assets_net']}"] + [None] * (n - 1), unit=unit)
+    fa_gross_close = C.row("期末固定资产净值（含在建）", [f"={cols[i]}{fa_open}+{cols[i]}{capex_total}-{cols[i]}{dep_total}" for i in range(n)], unit=unit, total=True, key="fixed_assets_incl_cip")
+    fa_close = C.row("其中：已投用固定资产净值", [f"={cols[i]}{fa_gross_close}-{cols[i]}{cip_total}" for i in range(n)], unit=unit, key="fixed_assets_net")
     for i in range(1, n):
-        C.ws[f"{cols[i]}{fa_open}"] = f"={cols[i-1]}{fa_close}"
+        C.ws[f"{cols[i]}{fa_open}"] = f"={cols[i-1]}{fa_gross_close}"
+        C.ws[f"{cols[i]}{fa_open}"].number_format = MONEY
+        C.ws[f"{cols[i]}{fa_open}"].font = F_CALC
     yr["capex"] = lambda i: f"'投资与折旧'!{cols[i]}{capex_total}"
     yr["dep"] = lambda i: f"'投资与折旧'!{cols[i]}{dep_total}"
     yr["fa"] = lambda i: f"'投资与折旧'!{cols[i]}{fa_close}"
+    yr["cip"] = lambda i: f"'投资与折旧'!{cols[i]}{cip_total}"
 
     # ===================== 融资 =====================
     Fn = bk.sheet("融资", "股权与借款（等额本金，期末计息）")
@@ -763,7 +790,10 @@ def build(a, out_path):
     loan_blocks = []
     for l in loan_refs:
         Fn.section(f"借款：{l['name']}")
-        draw = Fn.row("提款", [f"=IF({cols[i]}$4={l['year']},{l['amount']},0)" for i in range(n)], unit=unit)
+        if l.get("drawdown"):
+            draw = Fn.row("提款（按计划）", [f"={l['drawdown'][i]}" for i in range(n)], unit=unit)
+        else:
+            draw = Fn.row("提款", [f"=IF({cols[i]}$4={l['year']},{l['amount']},0)" for i in range(n)], unit=unit)
         open_r = Fn.r
         Fn.row("期初余额", [None] * n, unit=unit)
         if l.get("schedule"):
@@ -863,7 +893,8 @@ def build(a, out_path):
     b_oca = B.row("其他流动资产", [f"={yr['revenue'](i)}*{oca_pct}" for i in range(n)], unit=unit, key="other_current_assets")
     b_ca = B.row("流动资产合计", [f"={cols[i]}{b_cash_r}+{cols[i]}{b_ar}+{cols[i]}{b_inv}+{cols[i]}{b_oca}" for i in range(n)], unit=unit, total=True, key="current_assets")
     b_fa = B.row("固定资产净值", [f"={yr['fa'](i)}" for i in range(n)], unit=unit, key="bs_fixed_assets")
-    b_ta = B.row("资产总计", [f"={cols[i]}{b_ca}+{cols[i]}{b_fa}" for i in range(n)], unit=unit, total=True, key="total_assets")
+    b_cip = B.row("在建工程", [f"={yr['cip'](i)}" for i in range(n)], unit=unit, key="bs_construction_in_progress")
+    b_ta = B.row("资产总计", [f"={cols[i]}{b_ca}+{cols[i]}{b_fa}+{cols[i]}{b_cip}" for i in range(n)], unit=unit, total=True, key="total_assets")
     B.blank()
     B.section("负债")
     b_ap = B.row("应付账款", [f"=({yr['cogs'](i)}+{yr['opex'](i)})*{ap_days}/365" for i in range(n)], unit=unit, key="accounts_payable")

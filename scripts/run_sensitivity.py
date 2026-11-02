@@ -3,7 +3,9 @@
 run_sensitivity.py — 单因素敏感性分析：逐个改动关键假设，重算模型，汇总对关键结论的影响。
 
 用法:
-    python run_sensitivity.py assumptions.json -o work/sensitivity_outputs.json [--md work/sensitivity.md] [--chart work/charts/sensitivity.png] [--cases my_cases.json]
+    python run_sensitivity.py assumptions.json -o work/sensitivity_outputs.json [--md work/sensitivity.md] [--chart work/charts/sensitivity.png]
+        [--cases my_cases.json] [--variants 方案B=alt/assumptions_B.json 方案C=alt/assumptions_C.json] [--lang zh|en]
+    --variants 用整套备选假设文件跑“方案比较”，结果以附加情形列入同一张表（内部版第 15 章）。
 
 默认 12 个案例：销量 ±20%、价格 ±10%、单位成本 ±10%、费用 ±10%、资本开支 ±20%、应收账期 ±30 天。
 自定义案例文件为数组，元素形如:
@@ -42,11 +44,21 @@ DEFAULT_CASES = [
     {"id": "ar+30", "label": "应收账期 +30 天", "patch": "ar_days", "delta": 30, "pair": "应收账期 ±30 天"},
     {"id": "ar-30", "label": "应收账期 −30 天", "patch": "ar_days", "delta": -30, "pair": "应收账期 ±30 天"},
 ]
-METRICS = [
+METRICS_ZH = [
     ("revenue_last", "末年营业收入"), ("total_net_income", "累计净利润"), ("min_cash_balance", "最低期末现金"),
     ("funding_gap", "资金缺口"), ("peak_funding_need", "峰值资金需求"), ("irr_with_tv", "项目 IRR（含期末价值）"),
-    ("npv", "NPV"), ("dscr_min", "最低 DSCR"), ("first_profit_year", "首个盈利年"),
+    ("equity_irr", "股权 IRR"), ("npv", "NPV"), ("dscr_min", "经营期最低 DSCR"), ("first_profit_year", "首个盈利年"),
 ]
+METRICS_EN = [
+    ("revenue_last", "Final-year revenue"), ("total_net_income", "Cumulative net income"), ("min_cash_balance", "Minimum closing cash"),
+    ("funding_gap", "Funding gap"), ("peak_funding_need", "Peak funding need"), ("irr_with_tv", "Project IRR (with TV)"),
+    ("equity_irr", "Equity IRR"), ("npv", "NPV"), ("dscr_min", "Min. operating DSCR"), ("first_profit_year", "First profitable year"),
+]
+METRICS = METRICS_ZH
+LABELS = {
+    "zh": {"table_title": "表 敏感性分析（单因素，{unit}；括号内为相对基准的变化）", "case": "情形", "base": "基准", "npv": "NPV（{unit}），基准 {base}", "cash": "最低期末现金（{unit}），基准 {base}", "adverse": "不利方向", "favorable": "有利方向", "source": "来源：财务模型，单因素敏感性"},
+    "en": {"table_title": "Table: Sensitivity analysis (single factor, {unit}; change vs base in brackets)", "case": "Case", "base": "Base", "npv": "NPV ({unit}), base {base}", "cash": "Minimum closing cash ({unit}), base {base}", "adverse": "Adverse", "favorable": "Favourable", "source": "Source: financial model, single-factor sensitivity"},
+}
 
 
 def _key(cur, k):
@@ -105,17 +117,23 @@ def run_one(a, selector, soffice, tmpdir, tag, min_cash):
         "peak_funding_need": derived["peak_funding_need"],
         "irr_with_tv": (lambda v: None if (v is None or v > 3.0) else v)(rce.num(vals.get("irr_with_tv")) if not isinstance(vals.get("irr_with_tv"), str) else None),
         "npv": rce.num(vals.get("npv")),
-        "dscr_min": rce.num(vals.get("dscr_min")) if not isinstance(vals.get("dscr_min"), str) else None,
+        "equity_irr": (lambda v: None if (v is None or v > 3.0) else v)(rce.num(vals.get("equity_irr")) if not isinstance(vals.get("equity_irr"), str) else None),
+        "dscr_min": derived.get("dscr_min_operating"),
         "first_profit_year": derived["first_profit_year"],
         "cumulative_net_income": rce.num(vals.get("total_net_income")),
     }
+    if m["irr_with_tv"] is not None:
+        ufcf = rce.clean_series(vals.get("unlevered_fcf", []))
+        first_nonzero = next((x for x in ufcf if x is not None and abs(x) > 1e-9), None)
+        if first_nonzero is not None and first_nonzero > 0:
+            m["irr_with_tv"] = None  # 无前期净投入，IRR 无意义（与 recalc 保持一致）
     return m
 
 
 def fmt(v, key):
     if v is None:
         return "—"
-    if key in ("irr_with_tv",):
+    if key in ("irr_with_tv", "equity_irr"):
         return f"{v * 100:.1f}%"
     if key in ("dscr_min",):
         return f"{v:.2f}"
@@ -131,10 +149,20 @@ def main():
     ap.add_argument("--md", default=None)
     ap.add_argument("--chart", default=None)
     ap.add_argument("--cases", default=None)
+    ap.add_argument("--variants", nargs="*", default=[], help="整套备选假设文件：label=path.json（如 方案B=alt_B/assumptions_B.json），结果作为附加情形列入对比")
+    ap.add_argument("--lang", default="zh", choices=["zh", "en"], help="表格与图的语言")
     args = ap.parse_args()
+    global METRICS
+    METRICS = METRICS_EN if args.lang == "en" else METRICS_ZH
+    L = LABELS[args.lang]
     with open(args.assumptions, encoding="utf-8") as f:
         a0 = json.load(f)
     cases = DEFAULT_CASES
+    if args.lang == "en":
+        en_labels = {"volume-20": ("Volume −20%", "Volume ±20%"), "volume+20": ("Volume +20%", "Volume ±20%"), "price-10": ("Price −10%", "Price ±10%"), "price+10": ("Price +10%", "Price ±10%"),
+                     "unit_cost+10": ("Unit cost +10%", "Unit cost ±10%"), "unit_cost-10": ("Unit cost −10%", "Unit cost ±10%"), "opex+10": ("Opex +10%", "Opex ±10%"), "opex-10": ("Opex −10%", "Opex ±10%"),
+                     "capex+20": ("Capex +20%", "Capex ±20%"), "capex-20": ("Capex −20%", "Capex ±20%"), "ar+30": ("Receivable days +30", "Receivable days ±30"), "ar-30": ("Receivable days −30", "Receivable days ±30")}
+        cases = [dict(c, label=en_labels.get(c["id"], (c["label"], c.get("pair")))[0], pair=en_labels.get(c["id"], (c["label"], c.get("pair")))[1]) for c in DEFAULT_CASES]
     if args.cases:
         with open(args.cases, encoding="utf-8") as f:
             cases = json.load(f)
@@ -153,6 +181,16 @@ def main():
         m = run_one(a, sel, soffice, tmpdir, c["id"], min_cash)
         delta = {k: (None if (m.get(k) is None or base.get(k) is None or k == "first_profit_year") else m[k] - base[k]) for k in m}
         results.append({"id": c["id"], "label": c["label"], "pair": c.get("pair", c["label"]), "metrics": m, "delta_vs_base": delta})
+    for k, spec in enumerate(args.variants):
+        label, _, path = spec.partition("=")
+        if not path:
+            label, path = f"variant{k + 1}", label
+        print(f"[..] 备选方案 {label}")
+        with open(path, encoding="utf-8") as f:
+            av = json.load(f)
+        m = run_one(av, 1, soffice, tmpdir, f"variant_{k}", float(av.get("min_cash", min_cash) or 0))
+        delta = {kk: (None if (m.get(kk) is None or base.get(kk) is None or kk == "first_profit_year") else m[kk] - base[kk]) for kk in m}
+        results.append({"id": f"variant-{label}", "label": label, "pair": label, "variant": True, "metrics": m, "delta_vs_base": delta})
     shutil.rmtree(tmpdir, ignore_errors=True)
     out = {"unit": a0.get("meta", {}).get("unit", "万元"), "base": base, "cases": results}
     with open(args.output, "w", encoding="utf-8") as f:
@@ -160,8 +198,9 @@ def main():
     print(f"[OK] 输出：{args.output}")
 
     # Markdown 表
-    lines = [f"表 敏感性分析（单因素，{out['unit']}；括号内为相对基准的变化）", "", "| 情形 | " + " | ".join(l for _, l in METRICS) + " |", "|" + "---|" * (len(METRICS) + 1)]
-    lines.append("| 基准 | " + " | ".join(fmt(base[k], k) for k, _ in METRICS) + " |")
+    unit_label = out["unit"] if args.lang == "zh" else {"万元": "RMB 10k", "亿元": "RMB 100m"}.get(out["unit"], out["unit"])
+    lines = [L["table_title"].format(unit=unit_label), "", f"| {L['case']} | " + " | ".join(l for _, l in METRICS) + " |", "|" + "---|" * (len(METRICS) + 1)]
+    lines.append(f"| {L['base']} | " + " | ".join(fmt(base[k], k) for k, _ in METRICS) + " |")
     for r in results:
         cells = []
         for k, _ in METRICS:
@@ -184,12 +223,14 @@ def main():
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         from make_charts import PALETTE, setup_fonts
-        setup_fonts("zh")
+        setup_fonts(args.lang)
         pairs = {}
         for r in results:
+            if r.get("variant"):
+                continue
             pairs.setdefault(r["pair"], []).append(r)
         fig, axes = plt.subplots(1, 2, figsize=(10, 0.6 + 0.5 * len(pairs) + 1))
-        for ax, (key, title) in zip(axes, [("npv", f"NPV（{out['unit']}）"), ("min_cash_balance", f"最低期末现金（{out['unit']}）")]):
+        for ax, (key, title) in zip(axes, [("npv", L["npv"]), ("min_cash_balance", L["cash"])]):
             rows = []
             for pair, rs in pairs.items():
                 ds = [r["delta_vs_base"].get(key) for r in rs if r["delta_vs_base"].get(key) is not None]
@@ -198,13 +239,13 @@ def main():
                 rows.append((pair, min(ds), max(ds)))
             rows.sort(key=lambda t: max(abs(t[1]), abs(t[2])))
             labels = [t[0] for t in rows]
-            ax.barh(labels, [t[1] for t in rows], color=PALETTE["orange"], height=0.5, label="不利方向")
-            ax.barh(labels, [t[2] for t in rows], color=PALETTE["blue"], height=0.5, label="有利方向")
+            ax.barh(labels, [t[1] for t in rows], color=PALETTE["orange"], height=0.5, label=L["adverse"])
+            ax.barh(labels, [t[2] for t in rows], color=PALETTE["blue"], height=0.5, label=L["favorable"])
             ax.axvline(0, color="#999", linewidth=0.8)
             base_v = base.get(key)
-            ax.set_title(title + (f"，基准 {base_v:,.0f}" if base_v is not None else ""))
+            ax.set_title(title.format(unit=unit_label, base=(f"{base_v:,.0f}" if base_v is not None else "—")))
             ax.legend(loc="lower right", fontsize=8)
-        fig.text(0.01, 0.01, "来源：财务模型，单因素敏感性", fontsize=7.5, color=PALETTE["muted"])
+        fig.text(0.01, 0.01, L["source"], fontsize=7.5, color=PALETTE["muted"])
         fig.tight_layout(rect=(0, 0.03, 1, 1))
         os.makedirs(os.path.dirname(os.path.abspath(args.chart)), exist_ok=True)
         fig.savefig(args.chart, dpi=200, bbox_inches="tight", facecolor="white")

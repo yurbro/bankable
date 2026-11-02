@@ -10,8 +10,10 @@ deck.md 格式（每页以 # 开头）:
     # 页面标题
     要点一                 ← 普通行或 "- 要点" 都作为要点
     - 要点二
-    ![](charts/revenue_profit.png)   ← 图片放右侧（有图时要点在左）
+    ![](charts/revenue_profit.png)   ← 图片放右侧（有图时要点在左），按比例缩放到可用区域
+    | 指标 | 2027 | 2028 |          ← Markdown 表格会转成 PPT 表格（要点在上、表在下）
     > 讲稿备注              ← 进入演讲者备注
+    字号随要点数量自动调整；每页建议 3–5 条要点、每条一行，超过 8 条脚本会提示拆页。
     ---                      ← 可选的分隔，忽略
 """
 import argparse
@@ -45,6 +47,11 @@ def parse_deck(md):
             m = re.match(r"^!\[(.*?)\]\((.*?)\)", s.strip())
             if m:
                 cur["image"] = m.group(2).strip()
+            elif s.strip().startswith("|"):
+                cells = [c.strip() for c in s.strip().strip("|").split("|")]
+                if set("".join(cells)) <= set("-: "):
+                    continue
+                cur.setdefault("table", []).append(cells)
             elif s.strip() in ("", "---"):
                 continue
             else:
@@ -52,6 +59,18 @@ def parse_deck(md):
                 txt = re.sub(r"^[-*•]\s+|^\d+[.)]\s+", "", s.strip())
                 cur["bullets"].append((1 if indent >= 2 else 0, txt))
     return slides
+
+
+def fit_sizes(bullets):
+    """按文字量选字号：要点少字大，要点多字小；超过 8 条或 400 字提示精简。"""
+    total = sum(len(b) for _, b in bullets)
+    if len(bullets) <= 4 and total <= 160:
+        return 20, 16
+    if len(bullets) <= 6 and total <= 300:
+        return 17, 14
+    if len(bullets) <= 8 and total <= 420:
+        return 15, 13
+    return 13, 11
 
 
 def add_text(frame, text, size, bold=False, color=None, font="微软雅黑", align=None, level=0):
@@ -96,20 +115,51 @@ def build(slides, out, lang, accent, base_dir):
             bar.fill.solid()
             bar.fill.fore_color.rgb = RGBColor.from_string(accent)
             bar.line.fill.background()
-            tb = slide.shapes.add_textbox(Cm(2), Cm(1.2), W - Cm(4), Cm(2.2))
-            add_text(tb.text_frame, sd["title"], 28, bold=True, color="1A1A1A", font=font)
+            tb = slide.shapes.add_textbox(Cm(2), Cm(1.0), W - Cm(4), Cm(2.6))
+            title_size = 28 if len(sd["title"]) <= 22 else (24 if len(sd["title"]) <= 30 else 20)
+            add_text(tb.text_frame, sd["title"], title_size, bold=True, color="1A1A1A", font=font)
             has_img = sd["image"] and os.path.exists(sd["image"] if os.path.isabs(sd["image"]) else os.path.join(base_dir, sd["image"]))
-            body_w = (W - Cm(4)) * (0.48 if has_img else 1)
-            body = slide.shapes.add_textbox(Cm(2), Cm(4), body_w, H - Cm(6))
-            tf = body.text_frame
-            tf.word_wrap = True
-            if sd["subtitle"]:
-                add_text(tf, sd["subtitle"], 16, color="52514E", font=font)
-            for level, b in sd["bullets"]:
-                p = add_text(tf, ("• " if level == 0 else "– ") + b, 18 if level == 0 else 15, color="1A1A1A", font=font, level=level)
+            has_tbl = bool(sd.get("table"))
+            body_w = (W - Cm(4)) * (0.46 if has_img else 1)
+            body_h = (H - Cm(6)) * (0.5 if (has_tbl and sd["bullets"]) else 1)
+            size0, size1 = fit_sizes(sd["bullets"])
+            if len(sd["bullets"]) > 8 or sum(len(b) for _, b in sd["bullets"]) > 420:
+                print(f"[提示] 第 {idx + 1} 页要点过多（{len(sd['bullets'])} 条），建议拆页或精简")
+            if sd["bullets"] or sd["subtitle"]:
+                body = slide.shapes.add_textbox(Cm(2), Cm(4), body_w, body_h)
+                tf = body.text_frame
+                tf.word_wrap = True
+                if sd["subtitle"]:
+                    add_text(tf, sd["subtitle"], 15, color="52514E", font=font)
+                for level, b in sd["bullets"]:
+                    add_text(tf, ("• " if level == 0 else "– ") + b, size0 if level == 0 else size1, color="1A1A1A", font=font, level=level)
+            if has_tbl:
+                rows = sd["table"]
+                ncols = max(len(r) for r in rows)
+                top = Cm(4) + (body_h + Cm(0.4) if sd["bullets"] else 0)
+                tbl_h = min(H - top - Cm(1.5), Cm(0.9) * len(rows))
+                shape = slide.shapes.add_table(len(rows), ncols, Cm(2), top, body_w if has_img else W - Cm(4), tbl_h)
+                tbl = shape.table
+                for ri, row in enumerate(rows):
+                    for ci in range(ncols):
+                        cell = tbl.cell(ri, ci)
+                        cell.text = row[ci] if ci < len(row) else ""
+                        for p in cell.text_frame.paragraphs:
+                            for r in p.runs:
+                                r.font.size = Pt(12 if len(rows) <= 6 else 10)
+                                r.font.name = font
+                                r.font.bold = (ri == 0)
+                            if ci > 0:
+                                p.alignment = PP_ALIGN.RIGHT
             if has_img:
                 path = sd["image"] if os.path.isabs(sd["image"]) else os.path.join(base_dir, sd["image"])
-                slide.shapes.add_picture(path, Cm(2) + body_w + Cm(0.8), Cm(4.2), width=W - Cm(4) - body_w - Cm(0.8))
+                from PIL import Image as _Img
+                iw, ih = _Img.open(path).size
+                max_w = W - Cm(4) - body_w - Cm(0.8)
+                max_h = H - Cm(5.5)
+                scale = min(max_w / iw, max_h / ih)
+                pic_w, pic_h = int(iw * scale), int(ih * scale)
+                slide.shapes.add_picture(path, Cm(2) + body_w + Cm(0.8) + (max_w - pic_w) // 2, Cm(4.2), width=pic_w, height=pic_h)
             num = slide.shapes.add_textbox(W - Cm(3), H - Cm(1.4), Cm(2), Cm(1))
             add_text(num.text_frame, str(idx + 1), 10, color="999999", font=font, align=PP_ALIGN.RIGHT)
         if sd["notes"]:

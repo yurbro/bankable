@@ -25,7 +25,7 @@ SCENARIOS = [(1, "base", "基准"), (2, "downside", "下行"), (3, "upside", "�
 SERIES_KEYS = [
     "revenue", "cogs", "gross_profit", "gross_margin", "revenue_growth", "opex_total",
     "opex_销售费用", "opex_管理费用", "opex_研发费用", "opex_其他费用", "headcount_total",
-    "capex", "depreciation", "fixed_assets_net",
+    "capex", "depreciation", "fixed_assets_net", "construction_in_progress", "current_portion_debt",
     "equity_in", "grant_in", "loan_drawdown", "loan_repayment", "interest", "debt_balance", "debt_service",
     "ebitda", "ebitda_margin", "ebit", "ebt", "tax", "net_income", "net_margin", "dividends", "cumulative_net_income",
     "cfo", "cfi", "cff", "net_cash_change", "opening_cash", "closing_cash", "cash_vs_min",
@@ -134,9 +134,42 @@ def derive(vals, years, min_cash):
     dscr = vals.get("dscr", [])
     dscr_vals = [(years[i], v) for i, v in enumerate(dscr) if num(v) is not None]
     dscr_below = [y for y, v in dscr_vals if v < 1.2]
-    gm = clean_series(vals.get("gross_margin", []))
-    growth = clean_series(vals.get("revenue_growth", []))
+    repay = clean_series(vals.get("loan_repayment", []))
+    # 经营期 DSCR：只看有还本的年份（建设期/宽限期 EBITDA 为负时的 DSCR 对读者无意义）
+    dscr_oper = [(years[i], round(v, 2)) for i, v in enumerate(dscr) if num(v) is not None and i < len(repay) and (repay[i] or 0) > 0]
+    gm_all = clean_series(vals.get("gross_margin", []))
+    gm = [g for g, r in zip(gm_all, rev) if g is not None and r]  # 忽略无收入年份
+    growth_all = clean_series(vals.get("revenue_growth", []))
+    growth = [g for i, g in enumerate(growth_all) if g is not None and i > 0 and rev[i - 1]]
+    # 建设期：首个有收入年份之前的年份
+    first_rev_idx = next((i for i, r in enumerate(rev) if r), None)
+    construction_years = years[:first_rev_idx] if first_rev_idx else []
+    interest = clean_series(vals.get("interest", []))
+    construction_interest = sum((interest[i] or 0) for i in range(len(construction_years)))
+    capex_s = clean_series(vals.get("capex", []))
+    total_capex = sum(x or 0 for x in capex_s)
+    # 铺底流动资金：首个经营年的营运资金占用（应收 + 存货 + 其他流动资产 − 应付）
+    ar = clean_series(vals.get("accounts_receivable", [])); inv = clean_series(vals.get("inventory", []))
+    oca = clean_series(vals.get("other_current_assets", [])); ap = clean_series(vals.get("accounts_payable", []))
+    fi = first_rev_idx or 0
+    initial_wc = ((ar[fi] or 0) + (inv[fi] or 0) + (oca[fi] or 0) - (ap[fi] or 0)) if fi < len(ar) else 0.0
+    first_oper_year = years[first_rev_idx] if first_rev_idx is not None else None
+    cagr_oper = None
+    if first_rev_idx is not None and rev[first_rev_idx] and n - 1 - first_rev_idx >= 1 and rev[-1] and rev[-1] > 0:
+        cagr_oper = round((rev[-1] / rev[first_rev_idx]) ** (1 / (n - 1 - first_rev_idx)) - 1, 4)
+    eq_in = sum(x or 0 for x in clean_series(vals.get("equity_in", []))); gr_in = sum(x or 0 for x in clean_series(vals.get("grant_in", []))); ln_in = sum(x or 0 for x in clean_series(vals.get("loan_drawdown", [])))
     return {
+        "first_operating_year": first_oper_year,
+        "revenue_cagr_operating": cagr_oper,
+        "dscr_operating_by_year": dscr_oper,
+        "dscr_min_operating": min((v for _, v in dscr_oper), default=None),
+        "construction_years": construction_years,
+        "construction_period_interest": round(construction_interest, 1),
+        "total_capex": round(total_capex, 1),
+        "initial_working_capital": round(initial_wc, 1),
+        "total_investment_feasibility": round(total_capex + construction_interest + max(initial_wc, 0), 1),
+        "funding_sources_total": round(eq_in + gr_in + ln_in, 1),
+        "funding_sources": {"equity": round(eq_in, 1), "grants": round(gr_in, 1), "loans": round(ln_in, 1)},
         "first_profit_year": first_year(ni, lambda v: v > 0),
         "first_positive_cfo_year": first_year(cfo, lambda v: v > 0),
         "payback_years_ufcf": payback,
@@ -145,8 +178,8 @@ def derive(vals, years, min_cash):
         "cash_below_min_years": below_min_years,
         "dscr_by_year": [[y, round(v, 2)] for y, v in dscr_vals],
         "dscr_below_1_2_years": dscr_below,
-        "gross_margin_range": [round(min(x for x in gm if x is not None), 3), round(max(x for x in gm if x is not None), 3)] if any(x is not None for x in gm) else None,
-        "max_revenue_growth": round(max(x for x in growth if x is not None), 3) if any(x is not None for x in growth) else None,
+        "gross_margin_range": [round(min(gm), 3), round(max(gm), 3)] if gm else None,
+        "max_revenue_growth": round(max(growth), 3) if growth else None,
         "revenue_first_last": [rev[0], rev[-1]] if rev else None,
     }
 
@@ -232,8 +265,13 @@ def build_outputs(results, recs, unit, assumptions, model_path):
         "funding_gap_base": b["summary"].get("funding_gap"),
         "funding_gap_downside": out["scenarios"].get("downside", {}).get("summary", {}).get("funding_gap"),
         "dscr_min_base": b["summary"].get("dscr_min"),
+        "dscr_min_operating_base": b["derived"]["dscr_min_operating"],
         "dscr_below_1_2_years_base": b["derived"]["dscr_below_1_2_years"],
         "dscr_min_downside": out["scenarios"].get("downside", {}).get("summary", {}).get("dscr_min"),
+        "dscr_min_operating_downside": out["scenarios"].get("downside", {}).get("derived", {}).get("dscr_min_operating"),
+        "construction_years": b["derived"]["construction_years"],
+        "total_investment_feasibility": b["derived"]["total_investment_feasibility"],
+        "funding_sources_total": b["derived"]["funding_sources_total"],
         "gross_margin_range_base": b["derived"]["gross_margin_range"],
         "max_revenue_growth_base": b["derived"]["max_revenue_growth"],
         "warnings": [],
@@ -247,15 +285,25 @@ def build_outputs(results, recs, unit, assumptions, model_path):
         w.append(f"基准情景现金低于最低现金要求（{min_cash}）：{b['derived']['cash_below_min_years']}，资金缺口 {b['summary'].get('funding_gap'):,.1f}")
     if out["checks"]["funding_gap_downside"]:
         w.append(f"下行情景存在资金缺口 {out['checks']['funding_gap_downside']:,.1f}，建议在风险章节说明应对（备用授信、分期投入、费用弹性）")
-    if b["derived"]["dscr_below_1_2_years"]:
-        w.append(f"基准情景 DSCR 低于 1.2 的年份：{b['derived']['dscr_below_1_2_years']}（银行通常要求 ≥1.2–1.5）")
+    oper_below = [y for y, v in b["derived"]["dscr_operating_by_year"] if v < 1.2]
+    if oper_below:
+        w.append(f"基准情景经营期 DSCR 低于 1.2 的年份：{oper_below}（银行通常要求 ≥1.2–1.5）")
+    if b["derived"]["construction_years"]:
+        w.append(f"建设期 {b['derived']['construction_years']} 无收入：正文用经营期 DSCR（dscr_min_operating）而不是含建设期的最低值；可研口径总投资 = 建设投资 {b['derived']['total_capex']:,.1f} + 建设期利息 {b['derived']['construction_period_interest']:,.1f} + 铺底流动资金 {b['derived']['initial_working_capital']:,.1f} = {b['derived']['total_investment_feasibility']:,.1f}（模型未将建设期利息资本化，正文需说明口径）")
+    fs, ti = b["derived"]["funding_sources_total"], b["derived"]["total_investment_feasibility"]
+    if ti and fs and abs(fs - ti) / ti > 0.15:
+        w.append(f"资金来源合计 {fs:,.1f} 与可研口径总投资 {ti:,.1f} 相差超过 15%，请在融资章节解释差额（营运资金储备、建设期亏损、分期融资等）")
+    if assumptions and (assumptions.get("financing", {}) or {}).get("use_of_funds"):
+        uof_total = sum(float(u.get("amount", 0) or 0) for u in assumptions["financing"]["use_of_funds"])
+        if fs and abs(uof_total - fs) / fs > 0.01:
+            w.append(f"use_of_funds 合计 {uof_total:,.1f} ≠ 资金来源合计 {fs:,.1f}（股权 + 补助 + 借款），资金用途表与融资方案不一致")
     gmr = b["derived"]["gross_margin_range"]
     if gmr and (gmr[0] < 0.05 or gmr[1] > 0.85):
         w.append(f"毛利率区间 {gmr} 偏离常见范围，请核对单价/成本假设")
     rev = b["series"].get("revenue") or []
     growth = b["series"].get("revenue_growth") or []
     for i, g in enumerate(growth):
-        if g is not None and g > 1.0 and i > 0 and rev[i - 1] is not None and rev[-1]:
+        if g is not None and g > 1.0 and i > 0 and rev[i - 1] and rev[-1]:
             if rev[i - 1] >= 0.15 * rev[-1]:
                 w.append(f"基准情景 {years[i]} 年收入增长 {g:.0%}（上年已达末年收入的 {rev[i-1]/rev[-1]:.0%}），需在正文说明产能与获客机制")
             else:
@@ -274,6 +322,8 @@ def build_outputs(results, recs, unit, assumptions, model_path):
         "gross_margin_by_year": [fmt_pct(v) for v in s["gross_margin"]],
         "net_margin_by_year": [fmt_pct(v) for v in s["net_margin"]],
         "revenue_cagr": fmt_pct(sm.get("revenue_cagr")),
+        "revenue_cagr_operating": fmt_pct(d.get("revenue_cagr_operating")),
+        "revenue_cagr_note": (f"首年无收入，CAGR 以首个经营年 {d.get('first_operating_year')} 起算" if d.get("construction_years") else None),
         "total_capex": fmt_money(sm.get("total_capex"), unit),
         "total_equity_in": fmt_money(sm.get("total_equity_in"), unit),
         "total_loan_drawdown": fmt_money(sm.get("total_loan_drawdown"), unit),
@@ -292,6 +342,12 @@ def build_outputs(results, recs, unit, assumptions, model_path):
         "equity_irr": fmt_pct(sm.get("equity_irr")),
         "npv": fmt_money(sm.get("npv"), unit),
         "dscr_min": None if sm.get("dscr_min") is None else f"{sm['dscr_min']:.2f}",
+        "dscr_min_operating": None if d.get("dscr_min_operating") is None else f"{d['dscr_min_operating']:.2f}",
+        "construction_years": d.get("construction_years"),
+        "construction_period_interest": fmt_money(d.get("construction_period_interest"), unit),
+        "initial_working_capital": fmt_money(d.get("initial_working_capital"), unit),
+        "total_investment_feasibility": fmt_money(d.get("total_investment_feasibility"), unit),
+        "funding_sources_total": fmt_money(d.get("funding_sources_total"), unit),
         "cumulative_net_income": fmt_money(sm.get("total_net_income"), unit),
         "cumulative_cfo": fmt_money(sm.get("total_cfo"), unit),
     }
@@ -361,7 +417,8 @@ def write_scenario_sheet(wb, out, recs):
         ("最低现金出现年份", ["summary", "min_cash_year"], "年", "raw"),
         ("资金缺口（相对最低现金要求）", ["summary", "funding_gap"], unit, "money"),
         ("峰值资金需求（无融资口径）", ["derived", "peak_funding_need"], unit, "money"),
-        ("最低 DSCR", ["summary", "dscr_min"], "x", "ratio"),
+        ("最低 DSCR（全部年份）", ["summary", "dscr_min"], "x", "ratio"),
+        ("最低 DSCR（经营期，有还本年份）", ["derived", "dscr_min_operating"], "x", "ratio"),
         ("项目 IRR（含期末价值）", ["summary", "irr_with_tv"], "%", "pct"),
         ("项目 IRR（不含期末价值）", ["summary", "irr_no_tv"], "%", "pct"),
         ("项目 NPV", ["summary", "npv"], unit, "money"),

@@ -5,7 +5,7 @@
 <p align="center">
   <a href="#三步上手"><img alt="Claude skill" src="https://img.shields.io/badge/Claude-skill-2a78d6"></a>
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-1baf7a"></a>
-  <a href="CHANGELOG.md"><img alt="version" src="https://img.shields.io/badge/version-0.2.0-eb6834"></a>
+  <a href="CHANGELOG.md"><img alt="version" src="https://img.shields.io/badge/version-0.3.0-eb6834"></a>
   <img alt="language" src="https://img.shields.io/badge/%E8%AF%AD%E8%A8%80-%E4%B8%AD%E6%96%87%20%2F%20EN-eda100">
 </p>
 
@@ -71,7 +71,7 @@ Claude 会先问最多 8 个关键问题（你不在也会按稳妥假设推进�
 | 只有乐观情景 | 基准 / 下行 / 上行三情景由风险矩阵推导，另有单因素敏感性龙卷风图 |
 | 自己觉得写得不错 | 以投资人、信贷审查、政府评审、CFO 四种身份红队评审，写评审备忘 |
 
-对照测试（同一任务、同一模型）：带 skill 7/7 条验收标准通过，不带 skill 5/7——缺的正是证据登记册和正文与模型的一致性核对。
+三个测试用例（投资人版 / 银行贷款 + 存量业务 / 政府申报 + 董事会 + 中英双语 + PPT）全部通过各自的验收标准（7/7、5/5、6/6）；投资人版的对照组（不带 skill）为 5/7——缺的正是证据登记册和正文与模型的一致性核对。三次试跑暴露的问题已修入 v0.3.0。
 
 ## 仓库结构
 
@@ -80,9 +80,10 @@ SKILL.md                 流程、规则、质量底线（Claude 触发后首先
 references/              按阶段加载：访谈问题库 · 证据与登记册 · 读者画像 · 章节指南 · 财务模型指南 ·
                          评审清单 · PPT 指南 · 双语规范 · 行业模块
 scripts/
-  build_financial_model.py   assumptions.json → 带公式的 Excel 三表模型（多笔贷款、补助、期初余额、亏损结转）
+  build_financial_model.py   assumptions.json → 带公式的 Excel 三表模型（多笔贷款与还款/提款计划、补助、期初余额、建设期在建工程、亏损结转）
   recalc_and_extract.py      LibreOffice 重算 · 三情景 · model_outputs.json · 写回情景对比
-  run_sensitivity.py         单因素敏感性：表格 + 龙卷风图 + JSON
+  run_sensitivity.py         单因素敏感性 + 备选方案比较：表格 + 龙卷风图 + JSON（中/英）
+  make_tables.py             正文全部财务表格（关键指标、三表、偿债、三情景、总投资与筹措、敏感性；中/英）
   make_charts.py             财务图表 PNG（中/英）
   build_docx.py              plan.md → 排版好的 Word（封面、目录、编号标题、表格、图、页眉页脚）
   build_pptx.py              deck.md → PPT（没有 pptx skill 时的备选）
@@ -103,6 +104,7 @@ python scripts/build_financial_model.py work/assumptions.json -o work/模型.xls
 python scripts/recalc_and_extract.py work/模型.xlsx -o work/model_outputs.json --assumptions work/assumptions.json
 python scripts/run_sensitivity.py work/assumptions.json -o work/sensitivity_outputs.json --md work/sensitivity.md --chart work/charts/sensitivity.png
 python scripts/make_charts.py work/model_outputs.json -o work/charts
+python scripts/make_tables.py work/model_outputs.json -o work/tables.md --sensitivity work/sensitivity_outputs.json
 python scripts/build_docx.py work/plan.md -o work/计划书.docx --title "××商业计划书" --org "××公司" --date "2026年11月"
 python scripts/check_consistency.py work/plan.md work/model_outputs.json --extra work/sensitivity_outputs.json
 ```

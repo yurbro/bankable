@@ -35,9 +35,15 @@ def load_text(path):
 
 
 def _find(text, s, needs_yi=False):
-    """在正文中找数字写法：前后不能紧邻其他数字/小数点；亿元变体必须紧跟“亿”。"""
-    pat = r"(?<![\d.,])" + re.escape(s) + (r"\s*亿" if needs_yi else r"(?![\d])")
-    return re.search(pat, text) is not None
+    """在正文中找数字写法：前后不能紧邻其他数字/小数点；亿元变体必须紧跟“亿”，million 变体必须紧跟 million。"""
+    if needs_yi == "million":
+        tail = r"\s*(?:million|m\b|mn\b)"
+    elif needs_yi:
+        tail = r"\s*亿"
+    else:
+        tail = r"(?![\d])"
+    pat = r"(?<![\d.,])" + re.escape(s) + tail
+    return re.search(pat, text, flags=re.I) is not None
 
 
 def _meaningful(s):
@@ -58,6 +64,9 @@ def money_variants(v, unit):
     if unit == "万元" and abs(v) >= 1000:
         for d in (1, 2, 3):
             out.add((f"{v / 10000:.{d}f}", True))  # 亿元写法，必须紧跟“亿”
+    if unit == "万元" and abs(v) >= 10:
+        for d in (1, 2):
+            out.add((f"{v / 100:,.{d}f}", "million"))  # 英文 RMB xx.x million 写法
     if v < 0:  # 负数去掉符号的写法（“亏损 47.8 万元”）
         out |= money_variants(-v, unit)
     return out
@@ -101,9 +110,14 @@ def collect_model_numbers(o):
             else:
                 money.add(v)
         d = sc.get("derived", {})
-        if d.get("peak_funding_need") is not None:
-            money.add(d["peak_funding_need"])
-        for y, v in d.get("dscr_by_year", []):
+        for k in ("peak_funding_need", "construction_period_interest", "total_capex", "initial_working_capital", "total_investment_feasibility", "funding_sources_total"):
+            if d.get(k) is not None:
+                money.add(d[k])
+        for k, v in (d.get("funding_sources") or {}).items():
+            money.add(v)
+        if d.get("dscr_min_operating") is not None:
+            ratio.add(d["dscr_min_operating"])
+        for y, v in d.get("dscr_by_year", []) + d.get("dscr_operating_by_year", []):
             ratio.add(v)
         m = sc.get("monthly_year1")
         if m:
@@ -171,17 +185,17 @@ def collect_model_numbers(o):
 
 def find_in_text(text, variants):
     # 先匹配万元/百分比写法，再匹配亿元写法
-    for needs_yi in (False, True):
+    for needs in (False, True, "million"):
         for item in sorted(variants, key=lambda t: -len(t[0])):
             s, yi = item if isinstance(item, tuple) else (item, False)
-            if yi != needs_yi or not s:
+            if yi != needs or not s:
                 continue
             if _find(text, s, needs_yi=yi):
-                return s + ("亿" if yi else "")
+                return s + ("亿" if yi is True else (" million" if yi == "million" else ""))
     return None
 
 
-NUM_TOKEN_RE = re.compile(r"(-?\d[\d,]*\.?\d*)\s*(亿元|万元|亿|万|%|％|倍|x)")
+NUM_TOKEN_RE = re.compile(r"(-?\d[\d,]*\.?\d*)\s*(亿元|万元|亿|万|%|％|倍|x(?![a-z])|million|billion)", re.I)
 SOURCED_RE = re.compile(r"\[(?:[FAETS]-?\d+|S\d+)")
 
 
@@ -230,8 +244,9 @@ def main():
     s, sm, d = base["series"], base["summary"], base["derived"]
     years = o["years"]
 
+    first_i = next((i for i, v in enumerate(s["revenue"]) if v), 0)  # 建设期无收入时取首个经营年
     required = [
-        (f"首年（{years[0]}）营业收入", money_variants(s["revenue"][0], unit)),
+        (f"首个经营年（{years[first_i]}）营业收入", money_variants(s["revenue"][first_i], unit)),
         (f"末年（{years[-1]}）营业收入", money_variants(s["revenue"][-1], unit)),
         (f"末年（{years[-1]}）净利润", money_variants(s["net_income"][-1], unit)),
         ("股权投入合计 / 借款合计 / 外部资金合计（至少一项）", money_variants(sm.get("total_equity_in"), unit) | money_variants(sm.get("total_loan_drawdown"), unit) | money_variants((sm.get("total_equity_in") or 0) + (sm.get("total_loan_drawdown") or 0), unit)),
@@ -240,7 +255,9 @@ def main():
     ]
     if sm.get("irr_with_tv") is not None:
         required.append(("项目 IRR（含期末价值）", pct_variants(sm["irr_with_tv"])))
-    if sm.get("dscr_min") is not None and d.get("dscr_by_year"):
+    if d.get("dscr_min_operating") is not None:
+        required.append(("经营期最低 DSCR（两位小数）", {(f"{d['dscr_min_operating']:.2f}", False)}))
+    elif sm.get("dscr_min") is not None and d.get("dscr_by_year"):
         required.append(("最低 DSCR（两位小数）", {(f"{sm['dscr_min']:.2f}", False)}))
     if "downside" in o["scenarios"]:
         ds = o["scenarios"]["downside"]
@@ -254,7 +271,7 @@ def main():
             lines.append(f"- ✅ {label}：正文出现 `{hit}`")
         else:
             missing += 1
-            ex = sorted((t[0] + ("亿" if t[1] else "") for t in variants), key=len)[:3]
+            ex = sorted((t[0] + ("亿" if t[1] is True else (" million" if t[1] == "million" else "")) for t in variants if t[1] is not True), key=len)[:3]
             lines.append(f"- ❌ {label}：正文未出现（模型值形如 {', '.join(ex)}）")
 
     # 可疑数字扫描：限定在财务相关章节
@@ -289,7 +306,15 @@ def main():
         elif u in ("倍", "x"):
             ok = any(abs(v - r) <= 0.011 for r in ratio_vals if r is not None)
         else:
-            cand = v * 10000 if u in ("亿元", "亿") and unit == "万元" else v
+            ul = u.lower()
+            if ul in ("亿元", "亿") and unit == "万元":
+                cand = v * 10000
+            elif ul == "million" and unit == "万元":
+                cand = v * 100
+            elif ul == "billion" and unit == "万元":
+                cand = v * 100000
+            else:
+                cand = v
             ok = any(abs(cand - mv) <= max(args.tolerance * abs(mv), 0.6) for mv in money_vals if mv is not None)
         if not ok:
             ctx_start = max(0, m.start() - 25)

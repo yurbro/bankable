@@ -17,6 +17,8 @@ print("[smoke] model OK:", o["narrative_numbers"]["revenue_by_year"][0], "→", 
 PY
 python "$ROOT/scripts/run_sensitivity.py" "$ROOT/assets/assumptions-example.json" -o "$WORK/sensitivity_outputs.json" --md "$WORK/sensitivity.md" --chart "$WORK/charts/sensitivity.png" > /dev/null
 python "$ROOT/scripts/make_charts.py" "$WORK/model_outputs.json" -o "$WORK/charts" > /dev/null
+python "$ROOT/scripts/make_tables.py" "$WORK/model_outputs.json" -o "$WORK/tables.md" --sensitivity "$WORK/sensitivity_outputs.json" > /dev/null
+python "$ROOT/scripts/make_tables.py" "$WORK/model_outputs.json" -o "$WORK/tables_en.md" --lang en > /dev/null
 cp "$ROOT/examples/示例-plan（仅3章，测试排版用）.md" "$WORK/plan.md"
 python "$ROOT/scripts/build_docx.py" "$WORK/plan.md" -o "$WORK/plan.docx" --title "冒烟测试" --org "测试" --date "2026年11月" > /dev/null
 python "$ROOT/scripts/build_docx.py" "$WORK/plan.md" -o "$WORK/plan_stripped.docx" --title "冒烟测试" --strip-refs > /dev/null

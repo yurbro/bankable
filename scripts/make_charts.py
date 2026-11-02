@@ -89,14 +89,18 @@ def chart_revenue_profit(o, L, unit, out, dpi):
     ax.bar([i - w / 2 for i in x], rev, width=w, color=SERIES[0], label=L["revenue"])
     ax.bar([i + w / 2 for i in x], ni, width=w, color=SERIES[1], label=L["net_income"])
     for i, v in enumerate(rev):
-        ax.text(i - w / 2, v, fmt_num(v), ha="center", va="bottom", fontsize=8, color=PALETTE["ink"])
+        if v:
+            ax.text(i - w / 2, v, fmt_num(v), ha="center", va="bottom", fontsize=8, color=PALETTE["ink"])
     for i, v in enumerate(ni):
-        ax.text(i + w / 2, v if v >= 0 else 0, fmt_num(v), ha="center", va="bottom", fontsize=8, color=PALETTE["ink"])
+        if v:
+            ax.text(i + w / 2, v if v >= 0 else 0, fmt_num(v), ha="center", va="top" if v < 0 else "bottom", fontsize=8, color=PALETTE["ink"])
     if gm and any(g is not None for g in gm):
         for i, g in enumerate(gm):
-            if g is not None:
+            if g is not None and rev[i]:
                 ax.text(i, max(rev[i], 0) * 1.08, f"{L['gross_margin']} {g * 100:.0f}%", ha="center", va="bottom", fontsize=7.5, color=PALETTE["muted"])
         ax.set_ylim(top=max(rev) * 1.25)
+        if min(ni) < 0:
+            ax.set_ylim(bottom=min(ni) * 1.3)
     ax.set_xticks(list(x))
     ax.set_xticklabels(years)
     ax.axhline(0, color="#999", linewidth=0.8)

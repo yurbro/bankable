@@ -89,11 +89,16 @@ python scripts/recalc_and_extract.py work/模型.xlsx -o work/model_outputs.json
 # 4. 生成财务图表 PNG，供 Word/PPT 引用
 python scripts/make_charts.py work/model_outputs.json -o work/charts/
 
-# 5. 单因素敏感性（销量/价格/成本/费用/资本开支/账期），输出表格、龙卷风图和 JSON
+# 5. 单因素敏感性（销量/价格/成本/费用/资本开支/账期），输出表格、龙卷风图和 JSON；--variants 可把整套备选方案列入同一张表
 python scripts/run_sensitivity.py work/assumptions.json -o work/sensitivity_outputs.json --md work/sensitivity.md --chart work/charts/sensitivity.png
+
+# 6. 正文用的全部财务表格（关键指标、三表、偿债、三情景、资金来源与总投资、敏感性、分产品线、月度），直接复制进 plan.md
+python scripts/make_tables.py work/model_outputs.json -o work/tables.md --sensitivity work/sensitivity_outputs.json
 ```
 
-实际操作是迭代的：先用粗假设跑一遍模型，看 SOM 与模型收入是否对得上、资金需求与融资额是否匹配，再写市场与竞争章节；章节写作中发现的新约束（产能、账期、合规时间）回头改假设重跑。每次改假设都重新跑 2–5 步，不要手改输出。
+有建设期的项目（首年无收入）：资本开支填 `in_service_year`，贷款可分期 `drawdown`；正文用经营期 DSCR（`dscr_min_operating`）和可研口径总投资（`total_investment_feasibility`），脚本会把"用户说的总投资"与实际融资需求的差额警告出来，这个差额必须在融资章节解释。
+
+实际操作是迭代的：先用粗假设跑一遍模型，看 SOM 与模型收入是否对得上、资金需求与融资额是否匹配，再写市场与竞争章节；章节写作中发现的新约束（产能、账期、合规时间）回头改假设重跑。每次改假设都重新跑 2–6 步，不要手改输出，也不要手敲表格。
 
 跑完后看 `model_outputs.json` 里的 `checks`：资产负债表是否平、现金是否出现负数、资金缺口多大、DSCR 是否低于银行通常要求的 1.2–1.5、毛利率和增长率是否偏离行业常识。有问题先改假设或融资结构，再回头写。存量企业的扩建项目（首个现金流为正）不要报"项目 IRR"——`irr_note` 会提示，改用有无对比的增量现金流或 NPV / 回收期 / DSCR。
 
@@ -139,8 +144,8 @@ python scripts/build_docx.py work/plan.md -o "work/<项目名>-商业计划书-<
 # 英文版：先按 bilingual-guide 把 plan.md 改写为 plan_en.md（不是逐句直译），再生成
 python scripts/build_docx.py work/plan_en.md -o "work/<Project>-Business-Plan-<date>.docx" --lang en ...
 
-# PPT：按 pitch-deck-guide 写 work/deck.md（每页标题、要点、备注、图），
-# 优先用环境里的 pptx skill 做高质量版式；没有时用自带脚本
+# PPT：按 pitch-deck-guide 写 work/deck.md（每页标题写结论、3–5 条一行要点、备注、图或表），
+# 优先用环境里的 pptx skill 做高质量版式；没有时用自带脚本（字号随要点数量自动调整，超过 8 条会提示拆页）
 python scripts/build_pptx.py work/deck.md -o "work/<项目名>-路演PPT-<日期>.pptx" --lang zh
 ```
 
@@ -191,8 +196,9 @@ bankable/
 ├── scripts/
 │   ├── build_financial_model.py     assumptions.json → 带公式的 Excel 三表模型
 │   ├── recalc_and_extract.py        LibreOffice 重算、三情景、导出 model_outputs.json、写回情景对比
-│   ├── run_sensitivity.py           单因素敏感性：表格、龙卷风图、JSON
-│   ├── make_charts.py               从 model_outputs.json 生成财务图表 PNG
+│   ├── run_sensitivity.py           单因素敏感性 + 备选方案比较：表格、龙卷风图、JSON（中/英）
+│   ├── make_tables.py               从 model_outputs.json 生成正文全部财务表格（中/英，万元或 RMB million）
+│   ├── make_charts.py               从 model_outputs.json 生成财务图表 PNG（中/英）
 │   ├── build_docx.py                plan.md → 排版好的 Word（中/英）
 │   ├── build_pptx.py                deck.md → PPT（无 pptx skill 时的备选）
 │   └── check_consistency.py         正文数字 vs 模型输出核对

@@ -5,10 +5,11 @@
 ## 流程
 
 1. 中文版定稿并通过核对后，再做英文版（`work/plan_en.md`），结构、章节号、表格、图表与中文版一致，数字一字不差。
-2. 用 `scripts/make_charts.py --lang en` 重新生成英文图表到 `charts_en/`，英文版引用这些图。
+2. 英文表格与图：`make_tables.py model_outputs.json -o tables_en.md --lang en`（自动换算 RMB million）、`make_charts.py --lang en -o charts_en/`、`run_sensitivity.py --lang en --chart charts_en/sensitivity.png`。
 3. `scripts/build_docx.py plan_en.md --lang en --title "... Business Plan" ...` 生成英文 Word。
-4. 跑 `check_consistency.py plan_en.md model_outputs.json`（数字写法按英文格式，见下）。
-5. 交付说明里注明英文版是中文版的对应版本，以中文版为准（或反之，按用户要求）。
+4. 跑 `check_consistency.py plan_en.md model_outputs.json --extra sensitivity_outputs.json`：脚本识别 "RMB 31.3 million"、"RMB 10k" 表格和百分比写法；million 写法保留一到两位小数（313.2 million）才能匹配。
+5. 登记册和 Excel 模型默认保留中文（登记册是给用户确认的，模型表头可在 Excel 里自行翻译）；需要英文版登记册时只翻译"内容"和"来源"两列的摘要。英文 PPT：按 `pitch-deck-guide` 写 `deck_en.md`，`build_pptx.py --lang en`，图用 `charts_en/`。
+6. 交付说明里注明英文版是中文版的对应版本，以中文版为准（或反之，按用户要求）。
 
 ## 改写原则
 
