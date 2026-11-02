@@ -11,10 +11,10 @@
       font-family: "Noto Sans CJK SC", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif; color:var(--ink); }
   .wrap { padding:64px 80px; height:100%; display:flex; flex-direction:column; justify-content:space-between; }
   .brand { display:flex; align-items:center; gap:22px; }
-  .mark { width:72px; height:72px; border-radius:18px; background:linear-gradient(135deg,var(--blue),#1f5fb0); position:relative; box-shadow:0 10px 30px rgba(42,120,214,.25); }
-  .mark:after { content:""; position:absolute; left:18px; right:18px; bottom:18px; height:8px; border-radius:4px; background:#fff; }
-  .mark:before { content:""; position:absolute; left:18px; top:16px; width:36px; height:22px; border:5px solid #fff; border-bottom:none; border-radius:18px 18px 0 0; }
-  h1 { margin:0; font-size:84px; letter-spacing:-1px; font-weight:800; line-height:1; }
+  .mark { width:84px; height:84px; flex:none; filter:drop-shadow(0 12px 28px rgba(42,120,214,.28)); }
+  .mark img { width:100%; height:100%; display:block; }
+  h1 { margin:0; font-family:"Inter Display","Inter",sans-serif; font-size:90px; letter-spacing:-.045em; font-weight:800; line-height:1; }
+  h1 small { font-family:"Inter","Noto Sans CJK SC",sans-serif; }
   h1 small { font-size:30px; font-weight:500; color:var(--muted); margin-left:18px; letter-spacing:0; }
   .tag { font-size:40px; font-weight:700; margin:26px 0 10px; }
   .sub { font-size:24px; color:var(--muted); margin:0; }
@@ -32,7 +32,7 @@
 <body>
 <div class="wrap">
   <div>
-    <div class="brand"><div class="mark"></div><h1>Bankable <small>a Claude skill</small></h1></div>
+    <div class="brand"><div class="mark"><img src="../images/logo.svg" alt=""></div><h1>Bankable <small>a Claude skill</small></h1></div>
     <div class="tag">Business plans that survive due diligence</div>
     <p class="sub">Numbers before narrative · every claim has a source · tailored to the reader — 经得起拷问的商业计划书</p>
   </div>
