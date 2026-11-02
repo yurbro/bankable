@@ -34,6 +34,12 @@ def load_text(path):
         return f.read()
 
 
+def _find(text, s, needs_yi=False):
+    """在正文中找数字写法：前后不能紧邻其他数字/小数点；亿元变体必须紧跟“亿”。"""
+    pat = r"(?<![\d.,])" + re.escape(s) + (r"\s*亿" if needs_yi else r"(?![\d])")
+    return re.search(pat, text) is not None
+
+
 def _meaningful(s):
     """过滤掉太短、几乎任何正文都会包含的写法（如 "0"、"1"、"0.0"）。"""
     digits = s.replace(",", "").replace(".", "").replace("-", "").lstrip("0")
@@ -41,21 +47,18 @@ def _meaningful(s):
 
 
 def money_variants(v, unit):
-    """一个数值可能在正文中出现的写法（万元口径）。零值不要求提及。"""
+    """一个数值可能在正文中出现的写法（万元口径）：返回 {(写法, 是否亿元写法)}。零值不要求提及。"""
     out = set()
     if v is None or abs(v) < 0.05:
         return out
     for d in (0, 1, 2):
         for s in (f"{v:,.{d}f}", f"{v:.{d}f}"):
             if _meaningful(s):
-                out.add(s)
+                out.add((s, False))
     if unit == "万元" and abs(v) >= 1000:
         for d in (1, 2, 3):
-            s = f"{v / 10000:.{d}f}"
-            if _meaningful(s):
-                out.add(s)  # 亿元写法
-    # 负数去掉符号的写法（“亏损 47.8 万元”）
-    if v < 0:
+            out.add((f"{v / 10000:.{d}f}", True))  # 亿元写法，必须紧跟“亿”
+    if v < 0:  # 负数去掉符号的写法（“亏损 47.8 万元”）
         out |= money_variants(-v, unit)
     return out
 
@@ -67,8 +70,8 @@ def pct_variants(v):
     for d in (0, 1, 2):
         s = f"{v * 100:.{d}f}"
         if _meaningful(s) or d >= 1:
-            out.add(s + "%")
-            out.add(s + " %")
+            out.add((s + "%", False))
+            out.add((s + " %", False))
     return out
 
 
@@ -167,9 +170,14 @@ def collect_model_numbers(o):
 
 
 def find_in_text(text, variants):
-    for s in variants:
-        if s and s in text:
-            return s
+    # 先匹配万元/百分比写法，再匹配亿元写法
+    for needs_yi in (False, True):
+        for item in sorted(variants, key=lambda t: -len(t[0])):
+            s, yi = item if isinstance(item, tuple) else (item, False)
+            if yi != needs_yi or not s:
+                continue
+            if _find(text, s, needs_yi=yi):
+                return s + ("亿" if yi else "")
     return None
 
 
@@ -182,6 +190,17 @@ def collect_extra_numbers(path, money, pct, ratio):
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
 
+    def classify(key, v):
+        k = key.lower()
+        if isinstance(v, int) and 1990 <= v <= 2100 and ("year" in k or "年" in key):
+            return  # 年份本身不是数字证据
+        if any(t in k for t in ("irr", "margin", "growth", "cagr", "pct", "percent", "share", "roe", "rate")) and "ratio" not in k:
+            pct.add(float(v))
+        elif any(t in k for t in ("dscr", "coverage", "ratio", "to_ds", "times", "multiple", "_x", "倍")):
+            ratio.add(float(v))
+        else:
+            money.add(float(v))
+
     def walk(node, key=""):
         if isinstance(node, dict):
             for k, v in node.items():
@@ -190,14 +209,7 @@ def collect_extra_numbers(path, money, pct, ratio):
             for v in node:
                 walk(v, key)
         elif isinstance(node, (int, float)) and not isinstance(node, bool):
-            if any(t in key for t in ("irr", "margin", "growth", "cagr", "ratio", "roe")):
-                pct.add(float(node))
-            elif "dscr" in key:
-                ratio.add(float(node))
-            elif "year" in key:
-                return
-            else:
-                money.add(float(node))
+            classify(key, node)
     walk(data)
 
 
@@ -229,7 +241,7 @@ def main():
     if sm.get("irr_with_tv") is not None:
         required.append(("项目 IRR（含期末价值）", pct_variants(sm["irr_with_tv"])))
     if sm.get("dscr_min") is not None and d.get("dscr_by_year"):
-        required.append(("最低 DSCR（两位小数）", {f"{sm['dscr_min']:.2f}"}))
+        required.append(("最低 DSCR（两位小数）", {(f"{sm['dscr_min']:.2f}", False)}))
     if "downside" in o["scenarios"]:
         ds = o["scenarios"]["downside"]
         required.append(("下行情景末年收入或累计净利润或最低现金（至少一项）", money_variants(ds["series"]["revenue"][-1], unit) | money_variants(ds["summary"].get("total_net_income"), unit) | money_variants(ds["summary"].get("min_cash_balance"), unit) | money_variants(ds["summary"].get("funding_gap"), unit)))
@@ -242,7 +254,7 @@ def main():
             lines.append(f"- ✅ {label}：正文出现 `{hit}`")
         else:
             missing += 1
-            ex = sorted(variants, key=len)[:3]
+            ex = sorted((t[0] + ("亿" if t[1] else "") for t in variants), key=len)[:3]
             lines.append(f"- ❌ {label}：正文未出现（模型值形如 {', '.join(ex)}）")
 
     # 可疑数字扫描：限定在财务相关章节
@@ -253,7 +265,7 @@ def main():
     fin_text = []
     for ch in chapters:
         head = ch.strip().splitlines()[0] if ch.strip() else ""
-        if any(k in head for k in ("财务", "融资", "资金", "执行摘要", "情景", "Financial", "Funding", "Executive")) or len(chapters) == 1:
+        if any(k in head for k in ("财务", "融资", "资金", "执行摘要", "情景", "敏感", "贷款", "偿债", "还款", "申请", "筹措", "效益", "决策", "方案比较", "Financial", "Funding", "Executive", "Loan", "Debt", "Repayment", "Benefit", "Decision")) or len(chapters) == 1:
             fin_text.append(ch)
     scan = "\n".join(fin_text)
     suspicious = []

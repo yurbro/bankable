@@ -183,15 +183,34 @@ def build_outputs(results, recs, unit, assumptions, model_path):
             continue
         vals = results[code]
         series = {k: clean_series(vals[k]) for k in SERIES_KEYS if k in vals}
+        for k, v in vals.items():  # 其余按年序列（分收入线 rev_*/cogs_*/rev_volume_*、情景乘数等）
+            if k in series or k.startswith("_") or k.startswith("monthly") or not isinstance(v, list) or len(v) != len(years):
+                continue
+            series[k] = clean_series(v)
         scalars = {k: num(vals.get(k)) if not isinstance(vals.get(k), str) else None for k in SCALAR_KEYS if k in vals}
         scalars["min_cash_year"] = vals.get("min_cash_year")
+        # IRR 只在“先投入后回收”的现金流上有意义：首个非零无杠杆现金流为正，或结果离谱（>300%），置空并说明
+        ufcf = clean_series(vals.get("unlevered_fcf", []))
+        first_nonzero = next((x for x in ufcf if x is not None and abs(x) > 1e-9), None)
+        irr_note = None
+        if first_nonzero is not None and first_nonzero > 0:
+            irr_note = "现金流无前期净投入（存量业务或投资被经营现金流覆盖），项目 IRR 无意义；请用有无对比的增量现金流或 NPV/回收期表述"
+        for k in ("irr_with_tv", "irr_no_tv", "equity_irr"):
+            v = scalars.get(k)
+            if v is not None and (irr_note or v > 3.0):
+                scalars[k] = None
+                irr_note = irr_note or f"{k} 计算值 {v:.0%} 超出合理范围，已置空"
+        scalars["irr_note"] = irr_note
         derived = derive(vals, years, min_cash)
         out["scenarios"][code] = {"label": label, "series": series, "summary": scalars, "derived": derived}
         if "monthly_closing_cash" in vals:
             mc = clean_series(vals["monthly_closing_cash"])
-            annual_y1 = series["closing_cash"][0] if series.get("closing_cash") else None
+            m_idx = int(num(vals.get("monthly_year_index")) or 1)
+            annual_y1 = series["closing_cash"][m_idx - 1] if series.get("closing_cash") else None
             diff = (mc[-1] - annual_y1) if (mc[-1] is not None and annual_y1 is not None) else None
             out["scenarios"][code]["monthly_year1"] = {
+                "year_index": m_idx,
+                "year": years[m_idx - 1],
                 "closing_cash": mc,
                 "net_cash": clean_series(vals.get("monthly_net_cash", [])),
                 "min_closing_cash": min(x for x in mc if x is not None),
@@ -225,9 +244,9 @@ def build_outputs(results, recs, unit, assumptions, model_path):
     if b["derived"]["negative_cash_years"]:
         w.append(f"基准情景现金为负：{b['derived']['negative_cash_years']}，必须调整融资或支出安排")
     elif b["derived"]["cash_below_min_years"]:
-        w.append(f"基准情景现金低于最低现金要求（{min_cash}）：{b['derived']['cash_below_min_years']}，资金缺口 {b['summary'].get('funding_gap')}")
+        w.append(f"基准情景现金低于最低现金要求（{min_cash}）：{b['derived']['cash_below_min_years']}，资金缺口 {b['summary'].get('funding_gap'):,.1f}")
     if out["checks"]["funding_gap_downside"]:
-        w.append(f"下行情景存在资金缺口 {out['checks']['funding_gap_downside']}，建议在风险章节说明应对（备用授信、分期投入、费用弹性）")
+        w.append(f"下行情景存在资金缺口 {out['checks']['funding_gap_downside']:,.1f}，建议在风险章节说明应对（备用授信、分期投入、费用弹性）")
     if b["derived"]["dscr_below_1_2_years"]:
         w.append(f"基准情景 DSCR 低于 1.2 的年份：{b['derived']['dscr_below_1_2_years']}（银行通常要求 ≥1.2–1.5）")
     gmr = b["derived"]["gross_margin_range"]
@@ -267,6 +286,7 @@ def build_outputs(results, recs, unit, assumptions, model_path):
         "first_profit_year": d["first_profit_year"],
         "first_positive_cfo_year": d["first_positive_cfo_year"],
         "payback_years_ufcf": d["payback_years_ufcf"],
+        "irr_note": sm.get("irr_note"),
         "irr_with_tv": fmt_pct(sm.get("irr_with_tv")),
         "irr_no_tv": fmt_pct(sm.get("irr_no_tv")),
         "equity_irr": fmt_pct(sm.get("equity_irr")),
@@ -431,9 +451,15 @@ def main():
     print(f"[OK] 输出：{args.output}")
     print(f"[OK] 模型已更新（含情景对比与缓存值）：{model_path}")
     print("检查结果：")
+    def _r(v):
+        if isinstance(v, float):
+            return round(v, 2)
+        if isinstance(v, list):
+            return [_r(x) for x in v]
+        return v
     for k, v in out["checks"].items():
         if k != "warnings":
-            print(f"  - {k}: {v}")
+            print(f"  - {k}: {_r(v)}")
     for wmsg in out["checks"]["warnings"]:
         print(f"  ! {wmsg}")
     if not out["checks"]["warnings"]:

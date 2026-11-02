@@ -1,5 +1,5 @@
 {
-  "_comment": "示例假设文件（虚构公司，数字仅作演示）。字段说明见 references/financial-model-guide.md。所有金额单位与 meta.unit 一致；时间序列可写成数字（每年相同）、数组（逐年值）或 {year1, growth}（growth 可为单个数或长度为 years-1 的数组）。",
+  "_comment": "示例假设文件（虚构公司，数字仅作演示）。字段说明见 references/financial-model-guide.md。所有金额单位与 meta.unit 一致；时间序列可写成数字（每年相同）、数组（逐年值）或 {year1, growth}（growth 可为单个数或长度为 years-1 的数组）。情景乘数可为数字或逐年数组；贷款可加 schedule（逐年还本）；monthly_year1.year_index 选做哪一年的月度表；存量业务填 opening_balance（可加 loan_schedule）。",
   "meta": {
     "project_name": "绿源生物有机肥项目（示例）",
     "currency": "CNY",

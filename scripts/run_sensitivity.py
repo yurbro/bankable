@@ -11,6 +11,8 @@ run_sensitivity.py — 单因素敏感性分析：逐个改动关键假设，重
     {"id": "capex+30", "label": "资本开支 +30%", "patch": "capex", "factor": 1.3}
     {"id": "ar+60",  "label": "应收账期 +60 天", "patch": "ar_days", "delta": 60}
     {"id": "tax15",  "label": "所得税 15%", "patch": "json", "path": "tax.income_tax_rate", "value": 0.15}
+    {"id": "rate+1", "label": "贷款利率 +100bp", "patch": "json", "path": "financing.loans.0.rate", "value": 0.055}   # 支持列表索引
+    {"id": "nograce","label": "无宽限期", "patch": "json", "path": "financing.loans.0.grace_years", "value": 0}
 输出 JSON（基准 + 各案例的关键指标与相对基准的变化）、Markdown 表、龙卷风图（NPV 与最低期末现金）。
 正文引用这些数字时，把 sensitivity_outputs.json 作为 check_consistency.py 的 --extra 传入。
 """
@@ -47,12 +49,17 @@ METRICS = [
 ]
 
 
+def _key(cur, k):
+    return int(k) if isinstance(cur, list) else k
+
+
 def set_path(d, path, value):
+    """按点路径赋值，支持列表索引：financing.loans.0.rate、capex.1.amount。"""
     keys = path.split(".")
     cur = d
     for k in keys[:-1]:
-        cur = cur[k]
-    cur[keys[-1]] = value
+        cur = cur[_key(cur, k)]
+    cur[_key(cur, keys[-1])] = value
 
 
 def apply_case(a, case):
@@ -96,7 +103,7 @@ def run_one(a, selector, soffice, tmpdir, tag, min_cash):
         "min_cash_balance": rce.num(vals.get("min_cash_balance")),
         "funding_gap": rce.num(vals.get("funding_gap")),
         "peak_funding_need": derived["peak_funding_need"],
-        "irr_with_tv": rce.num(vals.get("irr_with_tv")) if not isinstance(vals.get("irr_with_tv"), str) else None,
+        "irr_with_tv": (lambda v: None if (v is None or v > 3.0) else v)(rce.num(vals.get("irr_with_tv")) if not isinstance(vals.get("irr_with_tv"), str) else None),
         "npv": rce.num(vals.get("npv")),
         "dscr_min": rce.num(vals.get("dscr_min")) if not isinstance(vals.get("dscr_min"), str) else None,
         "first_profit_year": derived["first_profit_year"],

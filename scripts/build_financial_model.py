@@ -6,7 +6,7 @@ build_financial_model.py — 从 assumptions.json 生成带公式的 Excel 三�
     python build_financial_model.py assumptions.json -o 模型.xlsx
 
 生成的工作簿（全部公式可追溯，蓝色字=输入，黑色=公式）:
-    说明 | 假设 | 收入 | 费用 | 投资与折旧 | 融资 | 利润表 | 现金流量表 | 资产负债表 | 指标 | 情景对比 | 月度现金流(第1年) | 来源日志 | _map(隐藏)
+    说明 | 假设 | 收入 | 费用 | 投资与折旧 | 融资 | 利润表 | 现金流量表 | 资产负债表 | 指标 | 情景对比 | 月度现金流(第N年) | 来源日志 | _map(隐藏)
 
 _map 工作表记录每个关键行的位置，供 recalc_and_extract.py 读取。
 假设文件的字段说明见 references/financial-model-guide.md，示例见 assets/assumptions-example.json。
@@ -214,6 +214,12 @@ def validate(a):
         g = l.get("grace_years", 0)
         if not _num(g) or g < 0 or (_num(l.get("term_years")) and g >= l["term_years"]):
             _err(errors, p + ".grace_years", "宽限期必须 ≥0 且小于贷款期限")
+        sch = l.get("schedule")
+        if sch is not None:
+            if not (isinstance(sch, list) and len(sch) == n and all(_num(x) for x in sch)):
+                _err(errors, p + ".schedule", f"还本计划应为长度 {n} 的数组（各预测年偿还本金；到期一次还本则只在最后一年填金额）")
+            elif _num(l.get("amount")) and abs(sum(sch) - float(l["amount"])) > 0.5:
+                _err(errors, p + ".schedule", f"还本计划合计 {sum(sch):,.1f} ≠ 贷款金额 {l['amount']:,.1f}")
     payout = fin.get("dividend_payout", 0)
     if not _num(payout) or payout < 0 or payout > 1:
         _err(errors, "financing.dividend_payout", "分红比例应在 0–1 之间")
@@ -221,6 +227,19 @@ def validate(a):
     tax = a.get("tax", {}) or {}
     if "income_tax_rate" in tax and not (_num(tax["income_tax_rate"]) and 0 <= tax["income_tax_rate"] < 1):
         _err(errors, "tax.income_tax_rate", "所得税率应在 0–1 之间，例如 0.25")
+
+    for code in ("downside", "upside"):
+        scn = (a.get("scenarios", {}) or {}).get(code, {}) or {}
+        for key in ("volume", "price", "unit_cost", "opex"):
+            v = scn.get(key)
+            if v is None:
+                continue
+            if _num(v):
+                scn[f"_{key}"] = [float(v)] * n
+            elif isinstance(v, list) and len(v) == n and all(_num(x) for x in v):
+                scn[f"_{key}"] = [float(x) for x in v]
+            else:
+                _err(errors, f"scenarios.{code}.{key}", f"应为数字或长度为 {n} 的数组")
 
     val = a.get("valuation", {}) or {}
     if "discount_rate" in val and not _num(val["discount_rate"]):
@@ -233,6 +252,12 @@ def validate(a):
     if meta.get("existing_business") and not isinstance(ob, dict):
         _err(errors, "opening_balance", "existing_business=true 时必须提供期初资产负债表")
     if isinstance(ob, dict):
+        sch = ob.get("loan_schedule")
+        if sch is not None:
+            if not (isinstance(sch, list) and len(sch) == n and all(_num(x) for x in sch)):
+                _err(errors, "opening_balance.loan_schedule", f"存量借款还本计划应为长度 {n} 的数组")
+            elif abs(sum(sch) - float(ob.get("loans", 0) or 0)) > 0.5:
+                _err(errors, "opening_balance.loan_schedule", f"还本计划合计 {sum(sch):,.1f} ≠ 存量借款余额 {float(ob.get('loans', 0) or 0):,.1f}")
         assets = sum(float(ob.get(k, 0) or 0) for k in ("cash", "accounts_receivable", "inventory", "other_current_assets", "fixed_assets_net"))
         liab_eq = sum(float(ob.get(k, 0) or 0) for k in ("accounts_payable", "loans", "paid_in_capital", "capital_reserve", "retained_earnings"))
         if abs(assets - liab_eq) > 0.5:
@@ -434,14 +459,7 @@ def build(a, out_path):
     sc = a.get("scenarios", {}) or {}
     dn = sc.get("downside", {}) or {}
     up = sc.get("upside", {}) or {}
-    r0 = S.r
-    ws.cell(row=r0, column=1, value="情景乘数").font = F_BOLD
-    for j, h in enumerate(["基准", "下行", "上行", "当前生效"]):
-        c = ws.cell(row=r0, column=3 + j, value=h)
-        c.font = F_BOLD
-        c.fill = FILL_HEADER
-        c.alignment = ALIGN_C
-    S.r += 1
+    S.note("情景乘数按年填写（1 = 不变）；周期性行业可表达“低谷两年后回升”之类的路径。基准情景恒为 1。")
     mult = {}
     for key, label, dflt_dn, dflt_up in [
         ("volume", "销量乘数", 0.8, 1.15),
@@ -449,19 +467,12 @@ def build(a, out_path):
         ("unit_cost", "单位成本乘数", 1.05, 0.98),
         ("opex", "费用乘数", 1.05, 1.0),
     ]:
-        r = S.r
-        ws.cell(row=r, column=1, value=label).font = F_CALC
-        for j, v in enumerate([1.0, float(dn.get(key, dflt_dn)), float(up.get(key, dflt_up))]):
-            c = ws.cell(row=r, column=3 + j, value=v)
-            c.number_format = RATIO
-            c.font = F_INPUT
-            c.fill = FILL_INPUT
-        c = ws.cell(row=r, column=6, value=f"=CHOOSE({sel_ref},C{r},D{r},E{r})")
-        c.number_format = RATIO
-        c.font = F_BOLD
-        mult[key] = f"'假设'!$F${r}"
-        bk.register(f"mult_{key}", "假设", r, 3, 3)
-        S.r += 1
+        dn_vals = dn.get(f"_{key}") or [float(dn.get(key, dflt_dn))] * n
+        up_vals = up.get(f"_{key}") or [float(up.get(key, dflt_up))] * n
+        r_dn = S.row(f"{label} — 下行", dn_vals, unit="x", fmt=RATIO, kind="input", key=f"mult_{key}_downside")
+        r_up = S.row(f"{label} — 上行", up_vals, unit="x", fmt=RATIO, kind="input", key=f"mult_{key}_upside")
+        r_cur = S.row(f"{label} — 当前生效", [f"=CHOOSE({sel_ref},1,{cols[i]}{r_dn},{cols[i]}{r_up})" for i in range(n)], unit="x", fmt=RATIO, bold=True, key=f"mult_{key}")
+        mult[key] = [f"'假设'!${cols[i]}${r_cur}" for i in range(n)]
     if sc.get("rationale"):
         S.note("情景依据：" + str(sc["rationale"]))
     if dn.get("label"):
@@ -599,8 +610,11 @@ def build(a, out_path):
         for j, (v, fmt) in enumerate(vals):
             c = ws.cell(row=r, column=2 + j, value=v)
             c.font = F_INPUT; c.fill = FILL_INPUT; c.number_format = fmt
-        loan_refs.append({"name": l.get("name", "借款"), "amount": f"'假设'!$B${r}", "year": f"'假设'!$C${r}", "rate": f"'假设'!$D${r}", "term": f"'假设'!$E${r}", "grace": f"'假设'!$F${r}"})
+        loan_refs.append({"name": l.get("name", "借款"), "amount": f"'假设'!$B${r}", "year": f"'假设'!$C${r}", "rate": f"'假设'!$D${r}", "term": f"'假设'!$E${r}", "grace": f"'假设'!$F${r}", "schedule": None})
         S.r += 1
+        if l.get("schedule") is not None:
+            rr = S.row(f"   {l.get('name', '借款')} — 还本计划（按年）", [float(x) for x in l["schedule"]], unit=unit, fmt=MONEY, kind="input")
+            loan_refs[-1]["schedule"] = [f"'假设'!${cols[i]}${rr}" for i in range(n)]
     payout_ref = S.scalar("分红比例（占正净利润）", float(fin.get("dividend_payout", 0.0)), fmt=PCT, unit="%")
     S.blank()
 
@@ -629,6 +643,10 @@ def build(a, out_path):
     ]:
         fmt = PCT if key == "loan_rate" else ("0" if "life" in key or "years" in key else MONEY)
         ob_ref[key] = S.scalar(label, float(ob.get(key, 0) or 0), fmt=fmt, unit=("年" if ("life" in key or "years" in key) else ("%" if key == "loan_rate" else unit)), key=f"ob_{key}")
+    ob_sched = None
+    if isinstance(ob, dict) and ob.get("loan_schedule") is not None:
+        rr = S.row("存量借款还本计划（按年）", [float(x) for x in ob["loan_schedule"]], unit=unit, fmt=MONEY, kind="input")
+        ob_sched = [f"'假设'!${cols[i]}${rr}" for i in range(n)]
     ws.column_dimensions["A"].width = 40
 
     # ===================== 收入 =====================
@@ -637,14 +655,14 @@ def build(a, out_path):
     for refs in rev_refs:
         R.section(refs["name"])
         u = refs["unit"]
-        vrow = R.row("销量（情景后）", [f"={refs['volume'][i]}*{mult['volume']}" for i in range(n)], unit=u, fmt=INT if u else MONEY, key=f"rev_volume_{refs['name']}")
-        prow = R.row("单价（情景后）", [f"={refs['price'][i]}*{mult['price']}" for i in range(n)], unit=f"{unit}/{u}" if u else unit, fmt=MONEY2)
+        vrow = R.row("销量（情景后）", [f"={refs['volume'][i]}*{mult['volume'][i]}" for i in range(n)], unit=u, fmt=INT if u else MONEY, key=f"rev_volume_{refs['name']}")
+        prow = R.row("单价（情景后）", [f"={refs['price'][i]}*{mult['price'][i]}" for i in range(n)], unit=f"{unit}/{u}" if u else unit, fmt=MONEY2)
         rrow = R.row("营业收入", [f"={cols[i]}{vrow}*{cols[i]}{prow}" for i in range(n)], unit=unit, bold=True, key=f"rev_{refs['name']}")
         if refs["mode"] == "unit":
-            crow = R.row("单位成本（情景后）", [f"={refs['cost'][i]}*{mult['unit_cost']}" for i in range(n)], unit=f"{unit}/{u}" if u else unit, fmt=MONEY2)
+            crow = R.row("单位成本（情景后）", [f"={refs['cost'][i]}*{mult['unit_cost'][i]}" for i in range(n)], unit=f"{unit}/{u}" if u else unit, fmt=MONEY2)
             corow = R.row("营业成本（材料/直接）", [f"={cols[i]}{vrow}*{cols[i]}{crow}" for i in range(n)], unit=unit, key=f"cogs_{refs['name']}")
         else:
-            crow = R.row("成本率（情景后）", [f"={refs['cost'][i]}*{mult['unit_cost']}" for i in range(n)], unit="%", fmt=PCT)
+            crow = R.row("成本率（情景后）", [f"={refs['cost'][i]}*{mult['unit_cost'][i]}" for i in range(n)], unit="%", fmt=PCT)
             corow = R.row("营业成本（材料/直接）", [f"={cols[i]}{rrow}*{cols[i]}{crow}" for i in range(n)], unit=unit, key=f"cogs_{refs['name']}")
         rev_total_rows.append(rrow)
         cogs_total_rows.append(corow)
@@ -671,15 +689,15 @@ def build(a, out_path):
     labor_rows = []
     for o in opex_refs:
         if o["pct"]:
-            cells = [f"={yr['revenue'](i)}*{o['refs'][i]}*{mult['opex']}" for i in range(n)]
+            cells = [f"={yr['revenue'](i)}*{o['refs'][i]}*{mult['opex'][i]}" for i in range(n)]
         else:
-            cells = [f"={o['refs'][i]}*{mult['opex']}" for i in range(n)]
+            cells = [f"={o['refs'][i]}*{mult['opex'][i]}" for i in range(n)]
         rr = E.row(f"{o['name']}（{o['category']}）", cells, unit=unit)
         cat_rows[o["category"]].append(rr)
     E.blank()
     E.section("人员成本（人数 × 人均年成本）")
     for h in hc_refs:
-        cells = [f"={h['count'][i]}*{h['cost'][i]}" + (f"*{mult['opex']}" if h["category"] != "营业成本" else "") for i in range(n)]
+        cells = [f"={h['count'][i]}*{h['cost'][i]}" + (f"*{mult['opex'][i]}" if h["category"] != "营业成本" else "") for i in range(n)]
         rr = E.row(f"{h['role']}（{h['category']}）", cells, unit=unit)
         if h["category"] == "营业成本":
             labor_rows.append(rr)
@@ -748,7 +766,10 @@ def build(a, out_path):
         draw = Fn.row("提款", [f"=IF({cols[i]}$4={l['year']},{l['amount']},0)" for i in range(n)], unit=unit)
         open_r = Fn.r
         Fn.row("期初余额", [None] * n, unit=unit)
-        rep = Fn.row("偿还本金", [f"=IF(AND({cols[i]}$4>={l['year']}+{l['grace']},{cols[i]}$4<={l['year']}+{l['term']}-1),MIN({cols[i]}{open_r},{l['amount']}/({l['term']}-{l['grace']})),0)" for i in range(n)], unit=unit)
+        if l.get("schedule"):
+            rep = Fn.row("偿还本金（按计划）", [f"=MIN({cols[i]}{open_r},{l['schedule'][i]})" for i in range(n)], unit=unit)
+        else:
+            rep = Fn.row("偿还本金", [f"=IF(AND({cols[i]}$4>={l['year']}+{l['grace']},{cols[i]}$4<={l['year']}+{l['term']}-1),MIN({cols[i]}{open_r},{l['amount']}/({l['term']}-{l['grace']})),0)" for i in range(n)], unit=unit)
         close_r = Fn.row("期末余额", [f"={cols[i]}{open_r}-{cols[i]}{rep}" for i in range(n)], unit=unit, total=True)
         intr = Fn.row("利息", [f"={cols[i]}{open_r}*{l['rate']}" for i in range(n)], unit=unit)
         for i in range(n):
@@ -762,7 +783,10 @@ def build(a, out_path):
     Fn.section("存量借款（期初余额）")
     ex_open = Fn.r
     Fn.row("期初余额", [None] * n, unit=unit)
-    ex_rep = Fn.row("偿还本金", [f"=IF(AND({ob_ref['loan_remaining_years']}>0,{cols[i]}$4<={ob_ref['loan_remaining_years']}),MIN({cols[i]}{ex_open},{ob_ref['loans']}/{ob_ref['loan_remaining_years']}),0)" for i in range(n)], unit=unit)
+    if ob_sched:
+        ex_rep = Fn.row("偿还本金（按计划）", [f"=MIN({cols[i]}{ex_open},{ob_sched[i]})" for i in range(n)], unit=unit)
+    else:
+        ex_rep = Fn.row("偿还本金", [f"=IF(AND({ob_ref['loan_remaining_years']}>0,{cols[i]}$4<={ob_ref['loan_remaining_years']}),MIN({cols[i]}{ex_open},{ob_ref['loans']}/{ob_ref['loan_remaining_years']}),0)" for i in range(n)], unit=unit)
     ex_close = Fn.row("期末余额", [f"={cols[i]}{ex_open}-{cols[i]}{ex_rep}" for i in range(n)], unit=unit, total=True)
     ex_int = Fn.row("利息", [f"={cols[i]}{ex_open}*{ob_ref['loan_rate']}" for i in range(n)], unit=unit)
     for i in range(n):
@@ -855,7 +879,8 @@ def build(a, out_path):
     B.blank()
     B.row("检查差额（应为 0）", [f"=ROUND({cols[i]}{b_ta}-{cols[i]}{b_tle},2)" for i in range(n)], unit=unit, fmt=MONEY2, key="balance_check", bold=True)
     B.row("资产负债率", [f"=IF({cols[i]}{b_ta}=0,0,{cols[i]}{b_tl}/{cols[i]}{b_ta})" for i in range(n)], unit="%", fmt=PCT, key="debt_ratio")
-    B.row("流动比率", [f"=IF({cols[i]}{b_ap}=0,0,{cols[i]}{b_ca}/{cols[i]}{b_ap})" for i in range(n)], unit="x", fmt=RATIO, key="current_ratio")
+    b_cpltd = B.row("备查：一年内到期借款（次年应还本金）", [f"={yr['rep'](i + 1)}" if i < n - 1 else f"=MIN({yr['debt'](i)},{yr['rep'](i)})" for i in range(n)], unit=unit, key="current_portion_debt")
+    B.row("流动比率（流动资产 ÷（应付账款 + 一年内到期借款））", [f"=IF({cols[i]}{b_ap}+{cols[i]}{b_cpltd}=0,\"-\",{cols[i]}{b_ca}/({cols[i]}{b_ap}+{cols[i]}{b_cpltd}))" for i in range(n)], unit="x", fmt=RATIO, key="current_ratio")
 
     # ===================== 现金流量表 =====================
     Cf = bk.sheet("现金流量表", "现金流量表（间接法）")
@@ -961,7 +986,11 @@ def build(a, out_path):
     # ===================== 月度现金流（第1年） =====================
     m12 = a.get("monthly_year1")
     if isinstance(m12, dict):
-        M = bk.sheet("月度现金流(第1年)", f"第 1 年（{start_year}）月度现金流（参考口径）", with_years=False)
+        m_idx = int(m12.get("year_index", 1))
+        m_idx = min(max(m_idx, 1), n)
+        mi = m_idx - 1
+        m_sheet = f"月度现金流(第{m_idx}年)"
+        M = bk.sheet(m_sheet, f"第 {m_idx} 年（{start_year + mi}）月度现金流（参考口径）", with_years=False)
         ws = M.ws
         ws["A3"] = "月份"
         ws["A3"].font = F_BOLD
@@ -996,7 +1025,8 @@ def build(a, out_path):
         lag_p = M.scalar("付款滞后（月）", plag, fmt="0")
         M.blank()
         M.section("现金流入")
-        y1 = lambda key: yr[key](0)
+        y1 = lambda key: yr[key](mi)
+        mcol = cols[mi]
         r_rec = M.r
         ws.cell(row=r_rec, column=1, value="销售收款").font = F_CALC
         for i, c in enumerate(mcols):
@@ -1032,13 +1062,13 @@ def build(a, out_path):
         ws.cell(row=r_mat, column=1, value="材料/直接成本付款").font = F_CALC
         for i, c in enumerate(mcols):
             cell = ws[f"{c}{r_mat}"]
-            cell.value = f"=IF({i+1}-{lag_p}>=1,'收入'!{first}{cogs_mat}*INDEX(${mcols[0]}${r_seas}:${mcols[-1]}${r_seas},1,{i+1}-{lag_p}),0)"
+            cell.value = f"=IF({i+1}-{lag_p}>=1,'收入'!{mcol}{cogs_mat}*INDEX(${mcols[0]}${r_seas}:${mcols[-1]}${r_seas},1,{i+1}-{lag_p}),0)"
             cell.number_format = MONEY
         M.r += 1
         r_opx = M.r
         ws.cell(row=r_opx, column=1, value="费用与人工（含生产人工）").font = F_CALC
         for i, c in enumerate(mcols):
-            cell = ws[f"{c}{r_opx}"]; cell.value = f"=({y1('opex')}+'费用'!{first}{labor_total})/12"; cell.number_format = MONEY
+            cell = ws[f"{c}{r_opx}"]; cell.value = f"=({y1('opex')}+'费用'!{mcol}{labor_total})/12"; cell.number_format = MONEY
         M.r += 1
         r_cx = M.r
         ws.cell(row=r_cx, column=1, value="资本开支").font = F_CALC
@@ -1046,7 +1076,7 @@ def build(a, out_path):
             parts = []
             for c_item, cref in zip(a.get("capex", []) or [], capex_refs):
                 mth = int(capex_months.get(c_item.get("id", c_item["name"]), capex_months.get(c_item["name"], 1)))
-                parts.append(f"IF(AND({cref['year']}=1,{c}$3={mth}),{cref['amount']},0)")
+                parts.append(f"IF(AND({cref['year']}={m_idx},{c}$3={mth}),{cref['amount']},0)")
             cell = ws[f"{c}{r_cx}"]; cell.value = "=" + ("+".join(parts) if parts else "0"); cell.number_format = MONEY
         M.r += 1
         r_int = M.r
@@ -1080,7 +1110,7 @@ def build(a, out_path):
         r_closem = r_openm + 1
         for i, c in enumerate(mcols):
             cell = ws[f"{c}{r_openm}"]
-            cell.value = f"={ob_ref['cash']}" if i == 0 else f"={mcols[i-1]}{r_closem}"
+            cell.value = (f"={ob_ref['cash']}" if mi == 0 else f"='现金流量表'!{cols[mi-1]}{c_close}") if i == 0 else f"={mcols[i-1]}{r_closem}"
             cell.number_format = MONEY
         M.r += 1
         ws.cell(row=r_closem, column=1, value="期末现金").font = F_BOLD
@@ -1091,17 +1121,21 @@ def build(a, out_path):
             cell = ws[f"O{rr}"]; cell.value = f"=SUM({mcols[0]}{rr}:{mcols[-1]}{rr})"; cell.number_format = MONEY; cell.font = F_BOLD
         M.blank()
         r_ann = M.r
-        ws.cell(row=r_ann, column=1, value="年度表期末现金（第 1 年）").font = F_CALC
-        cell = ws[f"{mcols[-1]}{r_ann}"]; cell.value = f"='现金流量表'!{first}{c_close}"; cell.number_format = MONEY
+        ws.cell(row=r_ann, column=1, value=f"年度表期末现金（第 {m_idx} 年）").font = F_CALC
+        cell = ws[f"{mcols[-1]}{r_ann}"]; cell.value = f"='现金流量表'!{mcol}{c_close}"; cell.number_format = MONEY
         M.r += 1
         r_diff = M.r
         ws.cell(row=r_diff, column=1, value="与年度表差异（月度 − 年度，口径差异）").font = F_NOTE
         cell = ws[f"{mcols[-1]}{r_diff}"]; cell.value = f"={mcols[-1]}{r_closem}-{mcols[-1]}{r_ann}"; cell.number_format = MONEY; cell.font = F_NOTE
         M.r += 1
-        bk.register("monthly_closing_cash", "月度现金流(第1年)", r_closem, 3, 12)
-        bk.register("monthly_net_cash", "月度现金流(第1年)", r_netm, 3, 12)
-        bk.register("monthly_collection_lag", "月度现金流(第1年)", int(lag_c.split("$")[-1]), 3, 1)
-        bk.register("monthly_payment_lag", "月度现金流(第1年)", int(lag_p.split("$")[-1]), 3, 1)
+        bk.register("monthly_closing_cash", m_sheet, r_closem, 3, 12)
+        bk.register("monthly_net_cash", m_sheet, r_netm, 3, 12)
+        bk.register("monthly_collection_lag", m_sheet, int(lag_c.split("$")[-1]), 3, 1)
+        bk.register("monthly_payment_lag", m_sheet, int(lag_p.split("$")[-1]), 3, 1)
+        bk.register("monthly_year_index", m_sheet, 1, 1, 1)
+        ws["A1"].value = f"第 {m_idx} 年（{start_year + mi}）月度现金流（参考口径）"
+        ws.cell(row=2, column=1, value=m_idx).font = F_NOTE
+        bk.map[-1] = ("monthly_year_index", m_sheet, 2, 1, 1)
         ws.column_dimensions["A"].width = 30
 
     # ===================== 来源日志 =====================

@@ -53,7 +53,8 @@ meta
   existing_business   true 时必须提供 opening_balance
 
 scenarios                        见"情景设计"
-  downside / upside: {volume, price, unit_cost, opex, label}   乘数（1 = 不变）
+  downside / upside: {volume, price, unit_cost, opex, label}   乘数（1 = 不变）；每项可为单个数，
+                                 或长度 = years 的数组表达逐年路径（如价格 [0.9, 0.9, 0.95, 1, 1]：低谷两年后回升）
   rationale                      情景依据（写风险编号）
 
 revenue_lines[]                  每条收入线
@@ -85,8 +86,10 @@ financing
   equity[]: {year, amount, note}
   grants[]: {year, amount, note}  政府补助 / 不占股资本投入：计入筹资现金流与资本公积，不计税
             （收益性补助或按递延收益分摊的，在正文说明口径；若想当作收入，改放 revenue_lines）
-  loans[]:  {id, name, amount, year, rate, term_years, grace_years}
-            等额本金；宽限期内只付息；还本年份 = 提款年+宽限期 … 提款年+期限−1
+  loans[]:  {id, name, amount, year, rate, term_years, grace_years, schedule?}
+            默认等额本金；宽限期内只付息；还本年份 = 提款年+宽限期 … 提款年+期限−1
+            schedule（可选）= 长度 years 的数组，各预测年偿还本金，合计须等于 amount；
+            到期一次还本就只在最后一年填金额；给了 schedule 则忽略 term/grace 的还本规则（利息仍按余额计）
   dividend_payout                分红比例（占正净利润），默认 0
   use_of_funds[]                 {name, amount}，用于资金用途图与融资章节，不参与计算
 
@@ -102,6 +105,8 @@ valuation
 min_cash                         最低现金要求；低于此值视为资金缺口
 
 monthly_year1（可选）
+  year_index                     做哪一年的月度表（1 = 第 1 个预测年，默认）。成熟企业次年才提款时填提款年，
+                                 银行关心的是提款年的现金节奏
   seasonality[12]                各月收入占比，和为 1
   collection_lag_months, payment_lag_months   省略时按 ar_days/30、ap_days/30 取整推出，与年度口径一致
   equity_month, loan_month, grant_month        资金到位月份
@@ -110,6 +115,8 @@ monthly_year1（可选）
 opening_balance（存量业务，或已有少量经营的初创企业）
   cash, accounts_receivable, inventory, other_current_assets, fixed_assets_net, fixed_assets_remaining_life,
   accounts_payable, loans, loan_rate, loan_remaining_years, paid_in_capital, capital_reserve, retained_earnings
+  loan_schedule（可选）          存量借款的逐年还本数组（长度 years，合计 = loans），已知还款表或到期一次还本时用；
+                                 不填则按 loan_remaining_years 直线偿还
   （资产必须 = 负债 + 权益，否则脚本报错；通常用 retained_earnings 配平，并在登记册注明）
 
 sources[]（可选）                 {id, content, source, grade, confidence, impact, confirm}，写入来源日志
@@ -133,6 +140,8 @@ sources[]（可选）                 {id, content, source, grade, confidence, i
 
 填完先跑一遍，看 `checks` 和 `warnings`，再调整，不要一次就定稿。
 
+**start_year 怎么选**：取"第一个需要预测的完整年度"。常见情形：现在是 2026 年 11 月、最新报表是 2025 年报 → `start_year: 2026`，期初余额用 2025 年末数，2026 年按"实际 10 个月 + 估算 2 个月"填假设并在登记册标注"估算年"；贷款 2027 年提款就把 `loans[].year` 填 2，并把 `monthly_year1.year_index` 设为 2。不要把 start_year 设成尚无完整数据的年份之前，也不要跳过当年——银行会要求从最新报表连续衔接。
+
 **历史期怎么衔接**：模型只从 `start_year` 起算，没有"历史期"列。
 - 成熟企业：`existing_business: true`，期初资产负债表取最近一期报表，历史收入与利润放正文 11.9 节的表格（来自用户报表，不进模型）。
 - 已有少量收入的初创企业（例如今年签了 180 万元合同）：同样用期初余额——把截至 `start_year` 前的现金、应收、已签未执行合同对应的预收/应收、实收资本填入 `opening_balance`，用 retained_earnings 配平；当年尚未完成的合同收入放进第 1 年的销量假设里，并在登记册写明"含上年结转合同 ×× 万元"。不要把历史收入塞进第 1 年去凑数。
@@ -147,6 +156,7 @@ sources[]（可选）                 {id, content, source, grade, confidence, i
 - 下行：从风险矩阵里挑概率 ≥ 中的风险，量化成乘数（如渠道延迟 → 销量 ×0.85；价格战 → 单价 ×0.97；原料涨价 → 单位成本 ×1.03），并在 `label` 里写明对应风险编号。不要用"统一打八折"这种无依据的设定。
 - 上行：只放有机制支撑的利好（已签意向、政策落地、规模采购）。
 - 读者偏好：银行版正文重点展示下行；投资人版展示三情景；政府版通常只需基准 + 下行。
+- 周期性行业（农牧、大宗、航运、化工）：用逐年数组表达"低谷 N 年后回升"的路径，而不是全期打折；并在正文说明路径与历史周期的对应。
 
 下行情景出现资金缺口是常见且有价值的发现——它决定了"应对措施"章节要写什么（备用授信、分期投入、费用弹性、里程碑式融资）。
 
@@ -157,7 +167,18 @@ python scripts/run_sensitivity.py work/assumptions.json -o work/sensitivity_outp
   --md work/sensitivity.md --chart work/charts/sensitivity.png [--cases my_cases.json]
 ```
 
-默认 12 个案例（销量 ±20%、价格 ±10%、单位成本 ±10%、费用 ±10%、资本开支 ±20%、应收账期 ±30 天），输出表格（可直接贴进 11.8 节）、龙卷风图和 JSON。正文引用这些数字时，把 `sensitivity_outputs.json` 作为 `check_consistency.py --extra` 传入。要测"没有 B 轮""二期推迟"这类结构性备选方案，用 `--cases` 写 `patch: json` 案例，或复制假设文件单独跑。
+默认 12 个案例（销量 ±20%、价格 ±10%、单位成本 ±10%、费用 ±10%、资本开支 ±20%、应收账期 ±30 天），输出表格（可直接贴进 11.8 节）、龙卷风图和 JSON。正文引用这些数字时，把 `sensitivity_outputs.json` 作为 `check_consistency.py --extra` 传入。
+
+结构性备选方案（银行最常问的）用 `--cases` 写 `patch: json` 案例，路径支持列表索引：
+
+```json
+[{"id": "rate+1", "label": "贷款利率 +100bp", "patch": "json", "path": "financing.loans.0.rate", "value": 0.055},
+ {"id": "nograce", "label": "无宽限期", "patch": "json", "path": "financing.loans.0.grace_years", "value": 0},
+ {"id": "noB", "label": "没有 B 轮", "patch": "json", "path": "financing.equity.1.amount", "value": 0},
+ {"id": "trough", "label": "价格低谷两年", "driver": "price", "mult": 0.9}]
+```
+
+"有项目 / 无项目"对比（存量企业扩建、银行要看增量现金流）仍需复制假设文件去掉项目部分单独跑，然后在正文做增量 EBITDA / 增量本息的对比表。
 
 ## 模型输出 model_outputs.json
 
@@ -171,13 +192,14 @@ scenarios.{base|downside|upside}
                       cfo, cfi, cff, closing_cash, cash_vs_min, unlevered_fcf, cumulative_ufcf, terminal_value,
                       total_assets, total_liabilities, total_equity, balance_check, debt_ratio, roe,
                       interest_coverage, dscr, breakeven_revenue, breakeven_ratio …
-  summary.*           irr_with_tv, irr_no_tv, npv, equity_irr, min_cash_balance, min_cash_year, funding_gap,
+  series 还包含每条收入线的 rev_<名称> / cogs_<名称> / rev_volume_<名称>，以及各情景乘数 mult_*
+  summary.*           irr_with_tv, irr_no_tv, equity_irr（无前期净投入或 >300% 时为 null，见 irr_note）, npv, min_cash_balance, min_cash_year, funding_gap,
                       total_equity_in, total_grant_in, total_loan_drawdown, total_capex, total_net_income, total_cfo, dscr_min, revenue_cagr
   derived.*           first_profit_year, first_positive_cfo_year, payback_years_ufcf（超出预测期为 null）,
                       peak_funding_need（无融资口径的峰值需求）, negative_cash_years, cash_below_min_years,
                       dscr_by_year, dscr_below_1_2_years, gross_margin_range, max_revenue_growth
-  monthly_year1       closing_cash[12], net_cash[12], min_closing_cash, min_month, annual_year1_closing_cash,
-                      difference_vs_annual, explanation（有月度表时）
+  monthly_year1       year_index, year, closing_cash[12], net_cash[12], min_closing_cash, min_month,
+                      annual_year1_closing_cash, difference_vs_annual, explanation（有月度表时）
 checks                balance_sheet_balances, funding_gap_*, dscr_*, warnings[]
 narrative_numbers     已格式化的字符串（"2,120.0 万元""39.4%"），正文直接引用
 use_of_funds, scenario_labels（传入 --assumptions 时）
@@ -194,8 +216,11 @@ use_of_funds, scenario_labels（传入 --assumptions 时）
 | 毛利率 > 85% 或 < 5% | 单价/成本口径错（含税/不含税、是否含运费） | 核对假设口径 |
 | 某年增长 > 100% | 没有产能/获客约束；小基数（脚本会区分） | 大基数：在正文写明产能与获客机制，或下调；小基数：一句话说明爬坡即可 |
 | 下行情景 DSCR 为负 | 下行情景 EBITDA 为负 | 正常现象，正文写"下行情景下第 × 年无法以经营现金流覆盖本息，需 ×× 万元备用资金"而不是只贴数字 |
-| IRR 为空（"-"） | 现金流全为负或无符号变化 | 检查期末价值设置；项目可能确实不可行 |
+| IRR 为空并有 `irr_note` | 首个无杠杆现金流为正（存量业务，投资被经营现金流覆盖）或结果离谱 | 对存量企业不要报"项目 IRR"；用有无对比的增量现金流算 IRR，或用 NPV / 回收期 / DSCR 表述 |
+| IRR 为空且无说明 | 现金流全为负或无符号变化 | 检查期末价值设置；项目可能确实不可行 |
 | 回收期 null | 预测期内未回收 | 正文写"超出预测期"，考虑延长预测年数或说明长期逻辑 |
+
+**流动比率的口径**：模型的流动比率 = 流动资产 ÷（应付账款 + 一年内到期借款），其中一年内到期借款取次年应还本金（资产负债表有备查行）。正文引用时写明口径；银行自己的口径可能还包含应付职工薪酬、应交税费等，差异在登记册说明。
 
 ## 各类读者看哪些指标
 
