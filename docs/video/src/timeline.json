@@ -1,0 +1,197 @@
+{
+ "total": 81.1,
+ "scenes": [
+  {
+   "id": "s1",
+   "start": 0,
+   "dur": 9.5333,
+   "pre": 1.0,
+   "lines": [
+    {
+     "en": "Most business plans written with AI fall apart at the first hard question.",
+     "zh": "大多数用 AI 写的商业计划书，经不起第一个尖锐问题。",
+     "a": 1.0,
+     "b": 5.489
+    },
+    {
+     "en": "Bankable is a Claude skill, built to survive them.",
+     "zh": "Bankable 是一个 Claude skill，专为经得起拷问而生。",
+     "a": 5.809,
+     "b": 8.838
+    }
+   ]
+  },
+  {
+   "id": "s2",
+   "start": 9.5333,
+   "dur": 9.7667,
+   "pre": 0.4,
+   "lines": [
+    {
+     "en": "It works by three rules.",
+     "zh": "它遵循三条规则。",
+     "a": 0.4,
+     "b": 1.884
+    },
+    {
+     "en": "Numbers come before the story.",
+     "zh": "数字先于故事。",
+     "a": 2.204,
+     "b": 3.898
+    },
+    {
+     "en": "Every claim has a source.",
+     "zh": "每个主张都有出处。",
+     "a": 4.218,
+     "b": 5.736
+    },
+    {
+     "en": "And nothing about your company is ever invented.",
+     "zh": "关于你公司的一切，绝不编造。",
+     "a": 6.056,
+     "b": 9.059
+    }
+   ]
+  },
+  {
+   "id": "s3",
+   "start": 19.3,
+   "dur": 8.0333,
+   "pre": 0.4,
+   "lines": [
+    {
+     "en": "Setup takes a minute.",
+     "zh": "安装只需一分钟。",
+     "a": 0.4,
+     "b": 1.771
+    },
+    {
+     "en": "Upload the skill file to Claude, or clone the repository into your Claude Code skills folder.",
+     "zh": "把 skill 文件上传到 Claude，或把仓库克隆到 Claude Code 的 skills 目录。",
+     "a": 2.091,
+     "b": 7.347
+    }
+   ]
+  },
+  {
+   "id": "s4",
+   "start": 27.3333,
+   "dur": 5.4667,
+   "pre": 0.4,
+   "lines": [
+    {
+     "en": "Then describe what you need, attach whatever you have, and say who will read it.",
+     "zh": "然后描述需求、附上已有材料，并说明谁来读。",
+     "a": 0.4,
+     "b": 4.651
+    }
+   ]
+  },
+  {
+   "id": "s5",
+   "start": 32.8,
+   "dur": 13.5667,
+   "pre": 0.4,
+   "lines": [
+    {
+     "en": "Bankable asks at most eight questions, logs every assumption, and builds the financial model first.",
+     "zh": "Bankable 最多问八个问题，登记每一条假设，先搭财务模型。",
+     "a": 0.4,
+     "b": 6.335
+    },
+    {
+     "en": "Only then does it write, and test the draft the way an investor, a banker, a reviewer, and a CFO would.",
+     "zh": "然后才动笔，并像投资人、银行、评审专家和 CFO 那样拷问初稿。",
+     "a": 6.655,
+     "b": 12.767
+    }
+   ]
+  },
+  {
+   "id": "s6",
+   "start": 46.3667,
+   "dur": 7.4,
+   "pre": 0.3,
+   "lines": [
+    {
+     "en": "Investors, banks, government reviewers, or your board.",
+     "zh": "投资人、银行、政府评审，或是你的董事会——",
+     "a": 0.3,
+     "b": 3.717
+    },
+    {
+     "en": "The chapters and the metrics adapt to the reader.",
+     "zh": "章节与指标随读者而变。",
+     "a": 4.037,
+     "b": 6.716
+    }
+   ]
+  },
+  {
+   "id": "s7",
+   "start": 53.7667,
+   "dur": 14.3333,
+   "pre": 0.4,
+   "lines": [
+    {
+     "en": "You get a Word business plan, in English, Chinese, or both.",
+     "zh": "一份 Word 商业计划书：英文、中文或双语。",
+     "a": 0.4,
+     "b": 4.008
+    },
+    {
+     "en": "A live, three statement Excel model, with scenarios and sensitivity.",
+     "zh": "一个可重算的三表 Excel 模型，含情景与敏感性分析。",
+     "a": 4.328,
+     "b": 8.659
+    },
+    {
+     "en": "An evidence register.",
+     "zh": "一份证据登记册。",
+     "a": 8.979,
+     "b": 10.271
+    },
+    {
+     "en": "And a pitch deck, all tied to the same numbers.",
+     "zh": "以及一套路演 PPT——全部对齐同一套数字。",
+     "a": 10.591,
+     "b": 13.424
+    }
+   ]
+  },
+  {
+   "id": "s8",
+   "start": 68.1,
+   "dur": 5.7333,
+   "pre": 0.4,
+   "lines": [
+    {
+     "en": "Correct an assumption, rerun, and every figure in the plan updates with it.",
+     "zh": "改一条假设、重跑，计划书里的每个数字随之更新。",
+     "a": 0.4,
+     "b": 4.825
+    }
+   ]
+  },
+  {
+   "id": "s9",
+   "start": 73.8333,
+   "dur": 7.2667,
+   "pre": 0.5,
+   "lines": [
+    {
+     "en": "Bankable.",
+     "zh": "Bankable。",
+     "a": 0.5,
+     "b": 1.176
+    },
+    {
+     "en": "Business plans that survive due diligence.",
+     "zh": "经得起拷问的商业计划书。",
+     "a": 1.496,
+     "b": 3.874
+    }
+   ]
+  }
+ ]
+}

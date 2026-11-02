@@ -1,0 +1,11 @@
+{"scenes": [
+ {"id": "s1", "lines": ["Most business plans written with AI fall apart at the first hard question.", "Bankable is a Claude skill, built to survive them."]},
+ {"id": "s2", "lines": ["It works by three rules.", "Numbers come before the story.", "Every claim has a source.", "And nothing about your company is ever invented."]},
+ {"id": "s3", "lines": ["Setup takes a minute.", "Upload the skill file to Claude, or clone the repository into your Claude Code skills folder."]},
+ {"id": "s4", "lines": ["Then describe what you need, attach whatever you have, and say who will read it."]},
+ {"id": "s5", "lines": ["Bankable asks at most eight questions, logs every assumption, and builds the financial model first.", "Only then does it write, and test the draft the way an investor, a banker, a reviewer, and a CFO would."]},
+ {"id": "s6", "lines": ["Investors, banks, government reviewers, or your board.", "The chapters and the metrics adapt to the reader."]},
+ {"id": "s7", "lines": ["You get a Word business plan, in English, Chinese, or both.", "A live, three statement Excel model, with scenarios and sensitivity.", "An evidence register.", "And a pitch deck, all tied to the same numbers."]},
+ {"id": "s8", "lines": ["Correct an assumption, rerun, and every figure in the plan updates with it."]},
+ {"id": "s9", "lines": ["Bankable.", "Business plans that survive due diligence."]}
+]}

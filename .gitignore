@@ -5,3 +5,12 @@ build/
 *.skill
 .DS_Store
 ~$*
+docs/video/src/_built.html
+docs/video/src/scenes/
+docs/video/src/stills/
+docs/video/src/vo/
+docs/video/src/*.wav
+docs/video/src/silent.mp4
+docs/video/src/list.txt
+docs/video/src/poster_full.png
+docs/video/src/video_poster.jpg

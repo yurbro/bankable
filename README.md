@@ -20,6 +20,14 @@ It delivers four things that reconcile with each other: a Word business plan (En
 
 > **Bankable**（经得起拷问的商业计划书）是一个 Claude skill：数字先于故事、每个主张都有出处、按读者定制。中文说明见 [README.zh-CN.md](README.zh-CN.md)。
 
+## Watch: Bankable in 80 seconds
+
+<p align="center">
+  <a href="docs/video/bankable-guide.mp4"><img src="docs/images/video_poster.jpg" alt="Watch the Bankable guide (1:21, voice-over, English + Chinese captions)" width="100%"></a>
+</p>
+
+<p align="center"><sub>Principles · install · how to ask · workflow · readers · deliverables · rerun — <a href="docs/video/bankable-guide.mp4">play the video</a> (1:21, voice-over, English + 中文 captions)</sub></p>
+
 ## Get started in three steps
 
 **1. Install**
@@ -100,7 +108,7 @@ assets/                  example assumptions file · 15-chapter skeleton · regi
 evals/                   5 eval cases (prompt + graders)
 examples/                example model and layout sample (fictional)
 samples/                 complete outputs of full test runs
-docs/                    README images and their HTML sources (regenerate with python docs/render.py)
+docs/                    README images and their HTML sources (regenerate with python docs/render.py); docs/video/ guide video + its sources
 tests/smoke_test.sh      script smoke test (run in CI)
 ```
 

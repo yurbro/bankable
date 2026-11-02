@@ -1,0 +1,633 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+:root{
+  --bg:#05080f; --ink:#eef2f8; --muted:#8b95a8; --dim:#4a5468; --line:rgba(255,255,255,.10);
+  --panel:rgba(255,255,255,.035); --blue:#3b8cff; --blue2:#1f5fc0; --orange:#ff7a45; --green:#22c88a; --yellow:#ffb72b; --red:#ff5d5d;
+  --sans:"Inter Display","Inter","Noto Sans CJK SC",sans-serif; --mono:"DejaVu Sans Mono",monospace; --zh:"Noto Sans CJK SC",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+#stage{position:absolute;inset:0;overflow:hidden}
+#bg{position:absolute;inset:0}
+.orb{position:absolute;width:1400px;height:1400px;border-radius:50%;filter:blur(10px)}
+#orb1{background:radial-gradient(circle,rgba(59,140,255,.22),rgba(59,140,255,0) 62%)}
+#orb2{background:radial-gradient(circle,rgba(255,122,69,.11),rgba(255,122,69,0) 62%)}
+#orb3{background:radial-gradient(circle,rgba(34,200,138,.07),rgba(34,200,138,0) 62%)}
+#grid{position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.16) 1.2px,transparent 1.6px);background-size:48px 48px;
+  -webkit-mask-image:radial-gradient(ellipse 70% 65% at 50% 45%,#000 0%,rgba(0,0,0,.35) 55%,transparent 85%)}
+#vig{position:absolute;inset:0;background:radial-gradient(ellipse 85% 80% at 50% 45%,transparent 55%,rgba(0,0,0,.55) 100%)}
+#noise{position:absolute;inset:0;background:url(assets/noise.png);opacity:.035;mix-blend-mode:overlay}
+.scene{position:absolute;inset:0;display:none}
+.abs{position:absolute}
+.label{font:600 17px/1 var(--mono);letter-spacing:.22em;color:var(--blue);text-transform:uppercase}
+.h1{font-weight:700;font-size:64px;letter-spacing:-.025em;line-height:1.05}
+.zh{font-family:var(--zh);color:var(--muted);font-weight:400}
+.sec{position:absolute;right:120px;top:64px;font:500 16px/1 var(--mono);letter-spacing:.2em;color:var(--muted)}
+.sec b{color:var(--ink);font-weight:600}
+.panel{position:absolute;background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.02));border:1px solid var(--line);border-radius:22px;
+  box-shadow:0 30px 80px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06)}
+.chip{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:8px 16px;font:600 18px/1 var(--sans);border:1px solid var(--line);background:rgba(255,255,255,.04);white-space:nowrap}
+.tag{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:30px;padding:0 9px;border-radius:8px;font:700 16px/1 var(--mono)}
+.dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+
+/* chrome */
+#chrome{position:absolute;left:120px;top:52px;display:flex;align-items:center;gap:14px;font-weight:700;font-size:24px;letter-spacing:-.01em}
+#prog{position:absolute;left:0;bottom:0;height:3px;width:1920px;background:rgba(255,255,255,.05)}
+#progf{height:100%;width:0;background:linear-gradient(90deg,var(--blue),#8a7dff,var(--orange))}
+#cap{position:absolute;left:0;right:0;bottom:62px;text-align:center}
+#cen{font:500 31px/1.3 var(--sans);color:#e9eef6;letter-spacing:-.005em;text-shadow:0 2px 14px rgba(0,0,0,.8)}
+#czh{font:400 22px/1.4 var(--zh);color:#97a1b3;margin-top:6px;text-shadow:0 2px 12px rgba(0,0,0,.8)}
+
+/* s1 */
+.doc{position:absolute;width:560px;height:660px;border-radius:20px;background:linear-gradient(180deg,#141b29,#0e1420);border:1px solid rgba(255,255,255,.12);padding:40px 42px;overflow:hidden}
+.doc .k{font:600 14px/1 var(--mono);letter-spacing:.18em;color:var(--muted)}
+.doc h3{font-size:34px;line-height:1.15;margin:20px 0 22px;letter-spacing:-.02em}
+.sk{height:11px;border-radius:6px;background:rgba(255,255,255,.09);margin:11px 0}
+.bars{display:flex;align-items:flex-end;gap:16px;height:150px;margin:28px 0 26px;padding-bottom:2px;border-bottom:1px solid rgba(255,255,255,.12)}
+.bars i{flex:1;border-radius:6px 6px 0 0;background:linear-gradient(180deg,#5d7ba6,#2e4466)}
+.kv{display:flex;justify-content:space-between;font-size:21px;padding:9px 0;border-bottom:1px dashed rgba(255,255,255,.08)}
+.kv span:first-child{color:var(--muted)}
+.hl{position:absolute;border:2px solid var(--orange);border-radius:8px;background:rgba(255,122,69,.10);box-shadow:0 0 24px rgba(255,122,69,.35)}
+.q{position:absolute;display:flex;align-items:center;gap:14px;font-weight:600;font-size:32px;color:#ffb08f;letter-spacing:-.01em;white-space:nowrap}
+.q i{font-style:normal;width:42px;height:42px;border-radius:50%;border:2px solid var(--orange);display:flex;align-items:center;justify-content:center;color:var(--orange);font-size:24px;font-weight:700}
+#s1logo{position:absolute;left:0;right:0;top:330px;display:flex;justify-content:center;align-items:center;gap:44px}
+#s1logo .mark{width:168px;height:168px;position:relative}
+#wordm{font-weight:800;font-size:178px;letter-spacing:-.045em;line-height:1;display:flex}
+#wordm span{display:inline-block}
+.glow{position:absolute;left:50%;top:50%;width:520px;height:520px;margin:-260px 0 0 -260px;border-radius:50%;background:radial-gradient(circle,rgba(59,140,255,.45),rgba(59,140,255,0) 60%)}
+.ring{position:absolute;left:50%;top:50%;border-radius:50%;border:2px solid rgba(120,175,255,.7)}
+
+/* s2 */
+.card3{position:absolute;top:400px;width:500px;height:430px;padding:40px 40px}
+.card3 .n{font:600 18px/1 var(--mono);color:var(--muted);letter-spacing:.14em}
+.card3 h4{font-size:38px;line-height:1.1;letter-spacing:-.02em;margin:22px 0 10px}
+.card3 .zh{font-size:24px}
+.mini{position:absolute;left:40px;right:40px;bottom:40px;height:120px}
+.box{position:absolute;top:0;width:150px;height:110px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.03);padding:14px}
+.box .t{font:600 13px/1 var(--mono);letter-spacing:.16em;color:var(--muted)}
+.cells{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:12px}
+.cells i{height:14px;border-radius:3px;background:rgba(34,200,138,.18)}
+.num{position:absolute;font:700 22px/1 var(--mono);color:#fff;background:var(--blue);border-radius:8px;padding:8px 10px;box-shadow:0 0 22px rgba(59,140,255,.6)}
+
+/* s3 */
+.win{position:absolute;top:330px;width:780px;height:460px}
+.win .hd{display:flex;align-items:center;gap:12px;padding:24px 30px;border-bottom:1px solid var(--line);font-weight:600;font-size:24px}
+.win .hd small{font:500 15px/1 var(--mono);color:var(--muted);margin-left:auto;letter-spacing:.1em}
+.drop{position:absolute;left:40px;right:40px;top:110px;height:200px;border:2px dashed rgba(255,255,255,.18);border-radius:18px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:22px}
+.file{position:absolute;left:0;top:0;display:flex;align-items:center;gap:16px;padding:16px 22px;border-radius:14px;background:#17213a;border:1px solid rgba(59,140,255,.5);font:600 24px/1 var(--mono);box-shadow:0 16px 40px rgba(0,0,0,.5)}
+.file i{width:38px;height:46px;border-radius:6px;background:linear-gradient(160deg,var(--blue),var(--blue2));position:relative}
+.bar{position:absolute;left:40px;right:40px;top:340px;height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden}
+.bar b{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--blue),#7ab3ff)}
+.tog{position:absolute;left:40px;top:380px;display:flex;align-items:center;gap:16px;font-size:22px}
+.sw{width:64px;height:36px;border-radius:18px;background:rgba(255,255,255,.12);position:relative}
+.sw b{position:absolute;top:4px;left:4px;width:28px;height:28px;border-radius:50%;background:#fff}
+.term{position:absolute;left:34px;right:34px;top:100px;font:500 23px/1.6 var(--mono);color:#cfd7e6;white-space:pre}
+.term .p{color:var(--green)} .term .c{color:var(--muted)} .term .y{color:var(--yellow)}
+.caret{display:inline-block;width:12px;height:26px;background:#cfd7e6;vertical-align:-5px;margin-left:2px}
+.lights{display:flex;gap:9px}.lights i{width:14px;height:14px;border-radius:50%}
+
+/* s4 */
+#comp{position:absolute;left:310px;top:300px;width:1300px;height:420px;padding:44px 50px}
+#ptxt{font-size:34px;line-height:1.45;color:#e8edf5;letter-spacing:-.01em;height:200px}
+#atts{position:absolute;left:50px;top:270px;display:flex;gap:14px}
+.att{display:flex;align-items:center;gap:12px;padding:12px 18px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.04);font:500 20px/1 var(--mono)}
+.att i{width:26px;height:30px;border-radius:4px}
+#reader{position:absolute;left:50px;bottom:40px;display:flex;align-items:center;gap:12px;font-size:22px;color:var(--muted)}
+#send{position:absolute;right:46px;bottom:34px;width:68px;height:68px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center}
+
+/* s5 */
+.node{position:absolute;top:470px;width:220px;margin-left:-110px;text-align:center}
+.node .c{width:72px;height:72px;margin:0 auto;border-radius:50%;border:2px solid rgba(255,255,255,.2);background:#0b111c;display:flex;align-items:center;justify-content:center;font:700 26px/1 var(--mono);color:var(--muted);position:relative}
+.node .nm{margin-top:22px;font-weight:700;font-size:26px;color:var(--muted)}
+.node .ds{margin-top:10px;font-size:18px;color:var(--muted);line-height:1.35}
+#wline{position:absolute;left:230px;top:505px;height:3px;width:1460px;background:rgba(255,255,255,.08)}
+#wfill{height:100%;width:0;background:linear-gradient(90deg,var(--blue),#7ab3ff 70%,var(--orange));box-shadow:0 0 18px rgba(59,140,255,.7)}
+.rev{position:absolute;top:740px;width:300px;padding:20px 22px;border-radius:16px}
+.rev b{display:block;font-size:22px;margin-bottom:8px}
+.rev span{font-size:19px;color:var(--muted)}
+
+/* s6 */
+.rd{position:absolute;top:300px;width:380px;height:510px;padding:34px 32px}
+.rd .bar0{position:absolute;left:0;right:0;top:0;height:5px;border-radius:22px 22px 0 0}
+.rd h4{font-size:34px;letter-spacing:-.02em}
+.rd .zh{font-size:21px;margin-top:6px}
+.rd .fq{margin-top:24px;font-size:21px;line-height:1.4;color:#c9d1de;font-style:italic;height:90px}
+.wt{margin-top:16px}
+.wt div{display:flex;align-items:center;gap:12px;font-size:16px;color:var(--muted);margin:9px 0}
+.wt div span{width:90px}
+.wt div i{height:8px;border-radius:4px;display:block}
+.mt{position:absolute;left:32px;right:32px;bottom:30px;display:flex;flex-wrap:wrap;gap:10px}
+.mt .chip{font-size:17px;padding:8px 14px}
+
+/* s7 */
+.out{position:absolute;top:280px;width:380px;height:540px;padding:30px 30px}
+.out .ty{font:600 15px/1 var(--mono);letter-spacing:.2em;color:var(--muted)}
+.out h4{font-size:30px;letter-spacing:-.02em;margin-top:12px;line-height:1.1}
+.pg{position:absolute;width:170px;height:240px;border-radius:6px;overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,.55);background:#fff}
+.pg img{width:100%;height:100%;object-fit:cover;object-position:top}
+.lang{position:absolute;left:30px;bottom:96px;display:flex;gap:8px}
+.lang .chip{font-size:16px;padding:7px 12px}
+.kpi{position:absolute;left:30px;right:30px;bottom:28px;height:52px;border-radius:12px;border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:19px;color:var(--muted)}
+.kpi b{font:700 24px/1 var(--mono);color:#fff}
+.rg{position:absolute;left:30px;right:30px;top:150px}
+.rg .r{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:18px}
+.rg .r .tx{flex:1;color:#c9d1de}
+.rg .r em{font:600 15px/1 var(--mono);color:var(--muted);font-style:normal}
+.sl{position:absolute;width:150px;height:84px;border-radius:7px;background:#121a2a;border:1px solid rgba(255,255,255,.14);overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,.5)}
+.sl i{position:absolute;display:block;border-radius:2px}
+#tie{position:absolute;left:350px;top:830px;height:2px;width:1220px;background:linear-gradient(90deg,transparent,var(--blue) 15%,#9fc6ff 50%,var(--blue) 85%,transparent);box-shadow:0 0 16px rgba(59,140,255,.9)}
+
+/* s8 */
+#edit{position:absolute;left:150px;top:390px;width:620px;height:300px;padding:34px 36px}
+.kt{position:absolute;width:290px;height:150px;padding:24px 26px}
+.kt .l{font-size:18px;color:var(--muted)}
+.kt .v{font:700 44px/1 var(--mono);margin-top:18px;letter-spacing:-.02em}
+.kt .d{position:absolute;right:22px;top:24px;font:600 16px/1 var(--mono)}
+#rerun{position:absolute;left:870px;top:470px;width:150px;height:150px;border-radius:50%;border:2px solid rgba(59,140,255,.6);display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,rgba(59,140,255,.18),rgba(59,140,255,.02))}
+#badge{position:absolute;left:0;right:0;top:770px;display:flex;justify-content:center}
+
+/* s9 */
+#s9logo{position:absolute;left:0;right:0;top:300px;display:flex;justify-content:center;align-items:center;gap:40px}
+</style></head>
+<body><div id="stage">
+<div id="bg"><div class="orb" id="orb1"></div><div class="orb" id="orb2"></div><div class="orb" id="orb3"></div><div id="grid"></div><div id="vig"></div><div id="noise"></div></div>
+
+<!-- ============ S1 ============ -->
+<div class="scene" id="s1">
+  <div id="docmaster" class="doc" style="left:680px;top:190px;opacity:0"></div>
+  <div id="tiles"></div>
+  <div id="hls"></div>
+  <div class="q" id="q1" style="left:150px;top:300px"><i>?</i>Where does 400% come from?</div>
+  <div class="q" id="q2" style="left:1300px;top:250px"><i>?</i>Source for £12bn?</div>
+  <div class="q" id="q3" style="left:1300px;top:610px"><i>?</i>Name one customer.</div>
+  <div class="q" id="q4" style="left:190px;top:690px"><i>?</i>And the downside case?</div>
+  <div class="glow" id="s1glow" style="top:415px"></div>
+  <div class="ring" id="s1ring"></div>
+  <div id="s1logo"><div class="mark" id="s1mark"></div><div id="wordm"></div></div>
+  <div class="abs" id="s1tag" style="left:0;right:0;top:560px;text-align:center;font-size:30px;color:var(--muted);font-weight:500;letter-spacing:.02em">a Claude skill</div>
+  <div class="abs" id="s1line" style="left:0;right:0;top:640px;text-align:center;font-size:46px;font-weight:600;letter-spacing:-.02em">Business plans that survive due diligence</div>
+  <div class="abs zh" id="s1zh" style="left:0;right:0;top:715px;text-align:center;font-size:28px;letter-spacing:.3em">经得起拷问的商业计划书</div>
+</div>
+
+<!-- ============ S2 ============ -->
+<div class="scene" id="s2">
+  <div class="sec"><b>01</b> · PRINCIPLES</div>
+  <div class="abs" id="s2h" style="left:160px;top:170px"><div class="label">The rules</div><div class="h1" style="margin-top:22px">Three rules. No exceptions.</div><div class="zh" style="font-size:28px;margin-top:16px">三条规则，没有例外</div></div>
+  <div class="panel card3" id="c1" style="left:160px">
+    <div class="n">01</div><h4>Numbers before narrative</h4><div class="zh">数字先于故事</div>
+    <div class="mini">
+      <div class="box" style="left:0"><div class="t">MODEL</div><div class="cells"><i></i><i></i><i></i><i></i><i style="background:rgba(59,140,255,.5)"></i><i></i><i></i><i></i><i></i></div></div>
+      <div class="abs" id="c1arrow" style="left:166px;top:54px;height:2px;width:88px;background:rgba(255,255,255,.25)"></div>
+      <div class="box" style="left:270px"><div class="t">PLAN</div><div class="sk" style="width:90%;margin-top:14px"></div><div class="sk" style="width:70%"></div><div class="sk" style="width:80%"></div></div>
+      <div class="num" id="c1num">£3.24m</div>
+    </div>
+  </div>
+  <div class="panel card3" id="c2" style="left:710px">
+    <div class="n">02</div><h4>Every claim has a source</h4><div class="zh">每个主张都有出处</div>
+    <div class="mini" style="font-size:24px;line-height:1.5">
+      <div id="c2s" style="color:#d9e0ec">“The market grows 18% a year”</div>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <span class="tag" id="c2a" style="background:rgba(59,140,255,.18);color:#8fbcff">S-3</span>
+        <span class="tag" id="c2b" style="background:rgba(255,183,43,.16);color:var(--yellow)">A-07</span>
+        <span class="tag" id="c2c" style="background:rgba(34,200,138,.16);color:var(--green)">Grade B</span>
+      </div>
+    </div>
+  </div>
+  <div class="panel card3" id="c3" style="left:1260px">
+    <div class="n">03</div><h4>Nothing invented</h4><div class="zh">不编造</div>
+    <div class="mini" style="font-size:22px">
+      <div class="kv" id="c3a" style="font-size:22px;border-bottom:1px dashed rgba(255,255,255,.1)"><span>Key customers</span><span class="tag" style="background:rgba(255,183,43,.12);color:var(--yellow);border:1px dashed var(--yellow);font-size:15px">[to be provided]</span></div>
+      <div class="kv" id="c3b" style="font-size:22px;border:0"><span>Licences</span><span class="tag" style="background:rgba(255,183,43,.12);color:var(--yellow);border:1px dashed var(--yellow);font-size:15px">[to be provided]</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ S3 ============ -->
+<div class="scene" id="s3">
+  <div class="sec"><b>02</b> · INSTALL</div>
+  <div class="abs" id="s3h" style="left:160px;top:150px"><div class="label">Setup</div><div class="h1" style="margin-top:22px">Install in a minute.</div><div class="zh" style="font-size:28px;margin-top:14px">一分钟安装</div></div>
+  <div class="panel win" id="w1" style="left:160px">
+    <div class="hd"><span class="dot" style="background:var(--blue)"></span>Claude.ai &amp; desktop<small>SETTINGS › SKILLS</small></div>
+    <div class="drop" id="drop">Upload a skill</div>
+    <div class="file" id="file"><i></i>bankable.skill</div>
+    <div class="bar"><b id="bar"></b></div>
+    <div class="tog" id="tog"><div class="sw" id="sw"><b id="swk"></b></div><span>Bankable</span><span id="ena" style="color:var(--green);font-weight:600">Enabled</span></div>
+  </div>
+  <div class="panel win" id="w2" style="left:980px;background:linear-gradient(180deg,#0d1320,#0a0f19)">
+    <div class="hd"><div class="lights"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div><span style="margin-left:10px">Claude Code</span><small>TERMINAL</small></div>
+    <div class="term" id="term"></div>
+  </div>
+</div>
+
+<!-- ============ S4 ============ -->
+<div class="scene" id="s4">
+  <div class="sec"><b>03</b> · ASK</div>
+  <div class="abs" id="s4h" style="left:310px;top:150px"><div class="label">Brief</div><div class="h1" style="margin-top:22px;font-size:56px">Say what you need. Attach what you have.</div></div>
+  <div class="panel" id="comp">
+    <div id="ptxt"></div>
+    <div id="atts">
+      <div class="att" id="a1"><i style="background:var(--green)"></i>accounts_2024-25.xlsx</div>
+      <div class="att" id="a2"><i style="background:var(--blue)"></i>founder_notes.docx</div>
+      <div class="att" id="a3"><i style="background:var(--red)"></i>market_study.pdf</div>
+    </div>
+    <div id="reader">Reader<span class="chip" id="rchip" style="color:var(--ink);font-size:21px"><span class="dot" style="background:var(--blue)"></span>Equity investors</span><span class="chip" id="rchip2" style="font-size:21px"><span class="dot" style="background:var(--orange)"></span>Bank</span></div>
+    <div id="send"><svg width="30" height="30" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+  </div>
+</div>
+
+<!-- ============ S5 ============ -->
+<div class="scene" id="s5">
+  <div class="sec"><b>04</b> · WORKFLOW</div>
+  <div class="abs" id="s5h" style="left:160px;top:150px"><div class="label">Eight steps</div><div class="h1" style="margin-top:22px">Model first. Narrative second.</div><div class="zh" style="font-size:28px;margin-top:14px">先模型，后叙述</div></div>
+  <div id="wline"><div id="wfill"></div></div>
+  <div id="nodes"></div>
+  <div id="revs"></div>
+</div>
+
+<!-- ============ S6 ============ -->
+<div class="scene" id="s6">
+  <div class="sec"><b>05</b> · READERS</div>
+  <div class="abs" id="s6h" style="left:170px;top:140px"><div class="label">Reader-aware</div><div class="h1" style="margin-top:20px;font-size:58px">One model. Four readers.</div></div>
+  <div id="rds"></div>
+</div>
+
+<!-- ============ S7 ============ -->
+<div class="scene" id="s7">
+  <div class="sec"><b>06</b> · DELIVERABLES</div>
+  <div class="abs" id="s7h" style="left:170px;top:130px"><div class="label">What you get</div><div class="h1" style="margin-top:20px;font-size:58px">Four outputs. One set of numbers.</div></div>
+  <div class="panel out" id="o1" style="left:170px"><div class="ty">WORD</div><h4>Business plan</h4>
+    <div class="pg" id="pg1" style="left:40px;top:150px"><img src="assets/page_cover.png"></div>
+    <div class="pg" id="pg2" style="left:105px;top:150px"><img src="assets/page_exec.png"></div>
+    <div class="pg" id="pg3" style="left:170px;top:150px"><img src="assets/page_finance.png"></div>
+    <div class="lang"><span class="chip" id="lg1">English</span><span class="chip" id="lg2" style="font-family:var(--zh)">中文</span><span class="chip" id="lg3">Bilingual</span></div>
+    <div class="kpi" id="k1"><span>IRR</span><b>21.4%</b></div></div>
+  <div class="panel out" id="o2" style="left:570px"><div class="ty">EXCEL</div><h4>3-statement model</h4>
+    <svg class="abs" style="left:30px;top:140px" width="320" height="300" viewBox="0 0 320 300" id="xl">
+      <g stroke="rgba(255,255,255,.07)"><line x1="0" y1="20" x2="320" y2="20"/><line x1="0" y1="70" x2="320" y2="70"/><line x1="0" y1="120" x2="320" y2="120"/><line x1="0" y1="170" x2="320" y2="170"/></g>
+      <path id="ln1" d="M0 165 C60 150 110 120 160 95 S260 40 320 22" fill="none" stroke="#22c88a" stroke-width="3"/>
+      <path id="ln2" d="M0 165 C60 155 110 135 160 118 S260 80 320 66" fill="none" stroke="#3b8cff" stroke-width="4"/>
+      <path id="ln3" d="M0 165 C60 162 110 152 160 142 S260 120 320 112" fill="none" stroke="#ff7a45" stroke-width="3"/>
+      <g id="torn"><line x1="160" y1="196" x2="160" y2="296" stroke="rgba(255,255,255,.3)"/></g>
+    </svg>
+    <div class="kpi" id="k2"><span>IRR</span><b>21.4%</b></div></div>
+  <div class="panel out" id="o3" style="left:970px"><div class="ty">MARKDOWN</div><h4>Evidence register</h4>
+    <div class="rg" id="rg"></div>
+    <div class="kpi" id="k3"><span>IRR</span><b>21.4%</b></div></div>
+  <div class="panel out" id="o4" style="left:1370px"><div class="ty">PPT</div><h4>Pitch deck</h4>
+    <div id="slides"></div>
+    <div class="kpi" id="k4"><span>IRR</span><b>21.4%</b></div></div>
+  <div id="tie"></div>
+</div>
+
+<!-- ============ S8 ============ -->
+<div class="scene" id="s8">
+  <div class="sec"><b>07</b> · ITERATE</div>
+  <div class="abs" id="s8h" style="left:150px;top:150px"><div class="label">Rerun</div><div class="h1" style="margin-top:22px;font-size:58px">Change one assumption. Everything follows.</div></div>
+  <div class="panel" id="edit">
+    <div style="display:flex;align-items:center;gap:14px"><span class="tag" style="background:rgba(255,183,43,.16);color:var(--yellow)">A-07</span><span style="font-size:24px;font-weight:600">Unit price</span><span style="margin-left:auto;font:500 15px/1 var(--mono);color:var(--muted);letter-spacing:.12em">REGISTER</span></div>
+    <div style="margin-top:44px;display:flex;align-items:baseline;gap:26px;font:700 52px/1 var(--mono)">
+      <span id="old" style="position:relative;color:#c9d1de">£12.00<i id="strike" style="position:absolute;left:-4px;top:50%;height:4px;width:0;background:var(--orange);display:block"></i></span>
+      <span id="arr" style="color:var(--muted);font-size:40px">→</span><span id="new" style="color:var(--yellow)"></span>
+    </div>
+    <div id="conf" style="margin-top:38px;font-size:19px;color:var(--muted)">Confirmed by user · evidence grade A</div>
+  </div>
+  <div id="rerun"><svg id="rsv" width="64" height="64" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" stroke="#9fc6ff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+  <div class="panel kt" id="t1" style="left:1150px;top:360px"><div class="l">Revenue · year 5</div><div class="v" id="v1"></div><div class="d" id="d1"></div></div>
+  <div class="panel kt" id="t2" style="left:1460px;top:360px"><div class="l">EBITDA margin</div><div class="v" id="v2"></div><div class="d" id="d2"></div></div>
+  <div class="panel kt" id="t3" style="left:1150px;top:530px"><div class="l">Project IRR</div><div class="v" id="v3"></div><div class="d" id="d3"></div></div>
+  <div class="panel kt" id="t4" style="left:1460px;top:530px"><div class="l">Payback</div><div class="v" id="v4"></div><div class="d" id="d4"></div></div>
+  <div id="badge"><span class="chip" style="font:600 20px/1 var(--mono);padding:14px 22px;border-color:rgba(34,200,138,.45);color:var(--green);background:rgba(34,200,138,.08)">✓ check_consistency · 0 mismatches</span></div>
+</div>
+
+<!-- ============ S9 ============ -->
+<div class="scene" id="s9">
+  <div class="glow" id="s9glow" style="top:385px"></div>
+  <div id="s9logo"><div class="mark" id="s9mark" style="width:150px;height:150px"></div><div id="wordm9" style="font-weight:800;font-size:160px;letter-spacing:-.045em;line-height:1">Bankable</div></div>
+  <div class="abs" id="s9line" style="left:0;right:0;top:520px;text-align:center;font-size:48px;font-weight:600;letter-spacing:-.02em">Business plans that survive due diligence</div>
+  <div class="abs zh" id="s9zh" style="left:0;right:0;top:598px;text-align:center;font-size:28px;letter-spacing:.3em">经得起拷问的商业计划书</div>
+  <div class="abs" id="s9url" style="left:0;right:0;top:700px;display:flex;justify-content:center"><span class="chip" style="font:600 24px/1 var(--mono);padding:16px 26px"><svg width="24" height="24" viewBox="0 0 16 16"><path fill="#eef2f8" d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.06-.49.06-.49.8.06 1.23.83 1.23.83.72 1.22 1.87.87 2.33.67.07-.52.28-.87.5-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 8 0z"/></svg>github.com/yurbro/bankable</span></div>
+  <div class="abs" id="s9fmt" style="left:0;right:0;top:790px;text-align:center;font:500 18px/1 var(--mono);letter-spacing:.3em;color:var(--muted)">WORD · EXCEL · REGISTER · DECK</div>
+</div>
+
+<!-- chrome -->
+<div id="chrome"><div id="cmark" style="width:40px;height:40px"></div>Bankable</div>
+<div id="cap"><div id="cen"></div><div id="czh"></div></div>
+<div id="prog"><div id="progf"></div></div>
+</div>
+
+<script>
+const TL = __TIMELINE__;
+const $ = id => document.getElementById(id);
+const cl = (x,a=0,b=1) => Math.max(a, Math.min(b, x));
+const E = {
+  out: x => 1 - Math.pow(1 - x, 3),
+  out5: x => 1 - Math.pow(1 - x, 5),
+  io: x => x < .5 ? 4*x*x*x : 1 - Math.pow(-2*x + 2, 3) / 2,
+  back: x => { const c1 = 1.5, c3 = c1 + 1; return 1 + c3*Math.pow(x-1,3) + c1*Math.pow(x-1,2); },
+  lin: x => x
+};
+const P = (t, a, d, e = E.out) => e(cl((t - a) / d));
+function st(el, o) {
+  if (!el) return;
+  el.style.opacity = (o.o ?? 1);
+  el.style.transform = `translate(${o.x||0}px,${o.y||0}px) scale(${o.s ?? 1}) rotate(${o.r||0}deg)`;
+  el.style.filter = o.b > 0.05 ? `blur(${o.b}px)` : 'none';
+}
+function rv(el, t, a, {d=.75, y=26, x=0, b=10, s=1} = {}) {
+  const k = P(t, a, d, E.out5);
+  st(el, {o: k, y: (1-k)*y, x: (1-k)*x, b: (1-k)*b, s: s + (1-s)*k});
+  return k;
+}
+const LOGO = s => `<svg width="100%" height="100%" viewBox="0 0 100 100"><defs><linearGradient id="lg${s}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4b9bff"/><stop offset="1" stop-color="#1b55b8"/></linearGradient></defs>
+<rect x="2" y="2" width="96" height="96" rx="24" fill="url(#lg${s})"/><rect x="2.5" y="2.5" width="95" height="95" rx="23.5" fill="none" stroke="rgba(255,255,255,.25)"/>
+<path d="M28 56 V45 a22 22 0 0 1 44 0 V56" fill="none" stroke="#fff" stroke-width="8.5" stroke-linecap="round"/><rect x="25" y="63" width="50" height="10" rx="5" fill="#fff"/></svg>`;
+$('s1mark').innerHTML = LOGO('a'); $('s9mark').innerHTML = LOGO('b'); $('cmark').innerHTML = LOGO('c');
+
+/* ---------- S1 build ---------- */
+const DOC = `<div class="k">BUSINESS PLAN · AI DRAFT</div>
+<h3>Revenue grows <span class="m1">400%</span> to £50m by year three</h3>
+<div class="sk" style="width:94%"></div><div class="sk" style="width:86%"></div><div class="sk" style="width:62%"></div>
+<div class="bars"><i style="height:12%"></i><i style="height:22%"></i><i style="height:41%"></i><i style="height:70%"></i><i style="height:100%"></i></div>
+<div class="kv"><span>Market size</span><span class="m2">£12bn</span></div>
+<div class="kv"><span>Customers</span><span class="m3">Fortune 500 pipeline</span></div>
+<div class="kv" style="border:0"><span>Downside</span><span class="m4">Not considered</span></div>`;
+$('docmaster').innerHTML = DOC;
+const DL = 680, DT = 190, TW = 140, TH = 132, COLS = 4, ROWS = 5;
+const tiles = [];
+let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+  const d = document.createElement('div');
+  d.style.cssText = `position:absolute;left:${DL + c*TW}px;top:${DT + r*TH}px;width:${TW}px;height:${TH}px;overflow:hidden`;
+  d.innerHTML = `<div class="doc" style="left:${-c*TW}px;top:${-r*TH}px">${DOC}</div>`;
+  $('tiles').appendChild(d);
+  tiles.push({el: d, vx: (c - 1.5) * 90 + (rnd() - .5) * 160, vy: -120 - rnd() * 180 + r * 20, vr: (rnd() - .5) * 120, dl: rnd() * .25 + (ROWS - r) * .04});
+}
+const hls = [];
+$('s1').style.display = 'block';
+['m1','m2','m3','m4'].forEach(m => {
+  const r = document.querySelector('#docmaster .' + m).getBoundingClientRect();
+  const h = document.createElement('div'); h.className = 'hl';
+  h.style.cssText += `left:${r.left - 8}px;top:${r.top - 5}px;width:${r.width + 16}px;height:${r.height + 10}px`;
+  $('hls').appendChild(h); hls.push(h);
+});
+$('s1').style.display = 'none';
+'Bankable'.split('').forEach(ch => { const s = document.createElement('span'); s.textContent = ch; $('wordm').appendChild(s); });
+
+/* ---------- S5 build ---------- */
+const NODES = [['Take stock','Inputs, reader,<br>deliverables'],['Interview','≤ 8 questions'],['Register','F · A · E · T,<br>graded'],['Research','Sources tagged<br>[S-n]'],
+  ['Model','3 statements ·<br>scenarios'],['Draft','Figures only<br>from the model'],['Check','Consistency +<br>red team'],['Deliver','Word · Excel ·<br>PPT · notes']];
+const NX = i => 230 + i * (1460 / 7);
+NODES.forEach((n, i) => {
+  const d = document.createElement('div'); d.className = 'node'; d.id = 'n' + i; d.style.left = NX(i) + 'px';
+  d.innerHTML = `<div class="c">${i}</div><div class="nm">${n[0]}</div><div class="ds">${n[1]}</div>`; $('nodes').appendChild(d);
+});
+const REVS = [['Investor','Why you, why now?','var(--blue)'],['Banker','How is it repaid?','var(--orange)'],['Reviewer','Which policy, what benefit?','var(--green)'],['CFO','What if we don\'t?','var(--yellow)']];
+REVS.forEach((r, i) => {
+  const d = document.createElement('div'); d.className = 'panel rev'; d.id = 'rv' + i; d.style.left = (315 + i * 330) + 'px';
+  d.innerHTML = `<b><span class="dot" style="background:${r[2]};margin-right:10px"></span>${r[0]}</b><span>“${r[1]}”</span>`; $('revs').appendChild(d);
+});
+
+/* ---------- S6 build ---------- */
+const RDS = [['Investors','股权投资人','Why this, why you, why now?','var(--blue)',[['Market',.9],['Finance',.75],['Risk',.45],['Impact',.3]],['IRR','Revenue CAGR','Runway']],
+  ['Banks','银行 / 贷款','How is the loan repaid — and if not?','var(--orange)',[['Market',.4],['Finance',.95],['Risk',.85],['Impact',.25]],['DSCR ≥ 1.3','Downside cash','Collateral']],
+  ['Government','政府评审','Which policy does it serve?','var(--green)',[['Market',.35],['Finance',.6],['Risk',.4],['Impact',.95]],['Jobs','Tax','Emissions']],
+  ['Boards','董事会','Should we do it — and what if we don’t?','var(--yellow)',[['Market',.5],['Finance',.8],['Risk',.75],['Impact',.45]],['NPV','Alternatives','±20%']]];
+RDS.forEach((r, i) => {
+  const d = document.createElement('div'); d.className = 'panel rd'; d.id = 'rd' + i; d.style.left = (170 + i * 400) + 'px';
+  d.innerHTML = `<div class="bar0" style="background:${r[3]}"></div><h4>${r[0]}</h4><div class="zh">${r[1]}</div><div class="fq">“${r[2]}”</div>
+  <div class="wt">${r[4].map(w => `<div><span>${w[0]}</span><i data-w="${w[1]}" style="background:${r[3]};width:0"></i></div>`).join('')}</div>
+  <div class="mt">${r[5].map(m => `<span class="chip" style="border-color:${r[3]}55">${m}</span>`).join('')}</div>`;
+  $('rds').appendChild(d);
+});
+
+/* ---------- S7 build ---------- */
+const torn = [[-120, 110], [-90, 70], [-60, 55], [-40, 30]];
+torn.forEach((b, i) => {
+  const y = 204 + i * 23;
+  $('torn').insertAdjacentHTML('beforeend', `<rect class="tb" data-l="${b[0]}" data-r="${b[1]}" x="160" y="${y}" width="0" height="15" rx="3" fill="#ff7a45"/><rect class="tb2" x="160" y="${y}" width="0" height="15" rx="3" fill="#22c88a"/>`);
+});
+const REG = [['F','Founded 2021, 14 staff','var(--blue)','A'],['A','Unit price £12.00','var(--yellow)','B'],['E','Churn 3% / month','#b48cff','C'],['T','Key customers','var(--orange)','—'],['A','Capacity 1.2m units','var(--yellow)','B']];
+REG.forEach((r, i) => $('rg').insertAdjacentHTML('beforeend',
+  `<div class="r" id="rr${i}"><span class="tag" style="background:${r[2]}22;color:${r[2]}">${r[0]}</span><span class="tx">${r[1]}</span><em>${r[3]}</em></div>`));
+const SLD = [[30, 150], [200, 150], [30, 254], [200, 254]];
+SLD.forEach((p, i) => {
+  const inner = i === 0 ? `<i style="left:12px;top:30px;width:90px;height:9px;background:#fff"></i><i style="left:12px;top:46px;width:60px;height:6px;background:#4b5a74"></i><i style="right:0;top:0;width:36px;height:84px;background:var(--blue)"></i>`
+    : i === 1 ? `<i style="left:12px;top:10px;width:60px;height:6px;background:#fff"></i>${[18,30,44,60].map((h,k)=>`<i style="left:${16+k*30}px;bottom:10px;width:20px;height:${h}px;background:${k==3?'var(--orange)':'#3b8cff'}"></i>`).join('')}`
+    : i === 2 ? `<i style="left:12px;top:10px;width:60px;height:6px;background:#fff"></i>${[0,1,2].map(k=>`<i style="left:12px;top:${28+k*16}px;width:${120-k*20}px;height:8px;background:#2c3a52"></i>`).join('')}`
+    : `<i style="left:12px;top:10px;width:60px;height:6px;background:#fff"></i>${[0,1,2].map(k=>`<i style="left:${12+k*44}px;top:28px;width:36px;height:44px;background:${['#3b8cff','#22c88a','#ffb72b'][k]}33;border:1px solid ${['#3b8cff','#22c88a','#ffb72b'][k]}"></i>`).join('')}`;
+  $('slides').insertAdjacentHTML('beforeend', `<div class="sl" id="sl${i}" style="left:${p[0]}px;top:${p[1]}px">${inner}</div>`);
+});
+
+/* ---------- helpers ---------- */
+function sceneOut(el, t, dur) { // exit transition baked into each scene's own file
+  const k = P(t, dur - .5, .5, E.io);
+  el.style.opacity = 1 - k; el.style.transform = `translateY(${-18*k}px)`; el.style.filter = k > .02 ? `blur(${6*k}px)` : 'none';
+}
+const La = (sc, n, f = 0) => sc.lines[n].a + f * (sc.lines[n].b - sc.lines[n].a);
+const typeTxt = (s, t, a, cps) => s.slice(0, Math.max(0, Math.floor((t - a) * cps)));
+const fmt = (v, dp) => v.toFixed(dp).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+const S = {};
+S.s1 = (t, sc) => {
+  const shatter = 4.15;
+  st($('docmaster'), {o: 0});
+  tiles.forEach(tl => {
+    const k = rv(tl.el, t, .15, {d: 1.0, y: 40, b: 12});
+    const u = Math.max(0, t - shatter - tl.dl);
+    if (u > 0) {
+      const y = tl.vy * u + 0.5 * 1500 * u * u, x = tl.vx * u, r = tl.vr * u;
+      st(tl.el, {o: k * (1 - cl((u - .25) / .9)), x, y, r, b: cl(u * 6, 0, 4)});
+    }
+  });
+  hls.forEach((h, i) => { const a = 1.25 + i * .62; const k = P(t, a, .35); const o = k * (1 - P(t, shatter - .05, .3));
+    st(h, {o, s: 1.15 - .15 * k}); });
+  ['q1','q2','q3','q4'].forEach((q, i) => { const a = 1.3 + i * .62; const k = rv($(q), t, a, {d: .6, y: 0, x: (i % 3 === 0 ? -30 : 30), b: 8});
+    if (t > shatter) { const o = 1 - P(t, shatter + .1 * i, .5); st($(q), {o: k * o, x: (i % 3 === 0 ? -1 : 1) * 60 * (1 - o), b: 8 * (1 - o)}); } });
+  // logo reveal
+  const L0 = 5.45;
+  const km = P(t, L0, .9, E.back);
+  st($('s1mark'), {o: P(t, L0, .35), s: .55 + .45 * km, r: (1 - km) * -8});
+  st($('s1glow'), {o: P(t, L0, .8) * (.75 + .25 * Math.sin((t - L0) * 2.2)), s: .6 + .4 * P(t, L0, 1.2)});
+  const rk = P(t, L0 + .1, 1.4, E.out);
+  const ring = $('s1ring'); const rs = 170 + rk * 900;
+  ring.style.width = ring.style.height = rs + 'px'; ring.style.margin = `${-rs/2}px 0 0 ${-rs/2}px`; ring.style.top = '415px';
+  ring.style.opacity = t < L0 + .1 ? 0 : (1 - rk) * .8;
+  [...$('wordm').children].forEach((s, i) => rv(s, t, sc.lines[1].a + i * .045, {d: .7, y: 50, b: 14}));
+  rv($('s1tag'), t, 6.55, {y: 14}); rv($('s1line'), t, 7.0, {y: 22}); rv($('s1zh'), t, 7.35, {y: 14});
+};
+S.s2 = (t, sc) => {
+  rv($('s2h'), t, .15, {y: 24});
+  [['c1', 1], ['c2', 2], ['c3', 3]].forEach(([c, n]) => rv($(c), t, La(sc, n) - .15, {y: 60, b: 14, s: .97}));
+  // card1: number travels model -> plan
+  const a1 = La(sc, 1) + .55, k1 = P(t, a1, 1.1, E.io);
+  const num = $('c1num'); st(num, {o: P(t, a1 - .2, .3), x: 20 + 300 * k1, y: 30 + 22 * k1 - Math.sin(k1 * Math.PI) * 44, s: 1});
+  $('c1arrow').style.background = `linear-gradient(90deg, var(--blue) ${k1*100}%, rgba(255,255,255,.2) ${k1*100}%)`;
+  // card2: tags pop
+  ['c2a','c2b','c2c'].forEach((c, i) => rv($(c), t, La(sc, 2) + .6 + i * .22, {y: 10, s: .7, b: 4}));
+  // card3
+  rv($('c3a'), t, La(sc, 3) + .45, {y: 12}); rv($('c3b'), t, La(sc, 3) + .75, {y: 12});
+};
+S.s3 = (t, sc) => {
+  rv($('s3h'), t, .15);
+  rv($('w1'), t, .35, {y: 50, s: .97}); rv($('w2'), t, .6, {y: 50, s: .97});
+  const a = La(sc, 1);
+  const kf = P(t, a + .1, .8, E.io);
+  st($('file'), {o: P(t, a, .3), x: 240 * kf - 160 * (1 - kf), y: 170 + (1 - kf) * 70, s: 1 + .05 * Math.sin(kf * Math.PI)});
+  $('drop').style.borderColor = kf > .9 ? 'rgba(59,140,255,.6)' : 'rgba(255,255,255,.18)';
+  $('drop').style.color = kf > .5 ? 'transparent' : 'var(--muted)';
+  $('bar').style.width = (P(t, a + .95, .8, E.io) * 100) + '%';
+  const kt = P(t, a + 1.8, .35, E.io);
+  $('swk').style.left = (4 + 28 * kt) + 'px'; $('sw').style.background = kt > .5 ? 'var(--green)' : 'rgba(255,255,255,.12)';
+  st($('ena'), {o: P(t, a + 2.0, .3)});
+  // terminal
+  const c1 = 'git clone https://github.com/yurbro/bankable \\\n    ~/.claude/skills/bankable';
+  const ts = La(sc, 1, .38);
+  const typed = typeTxt(c1, t, ts, 34);
+  const done1 = typed.length >= c1.length;
+  let html = `<span class="p">$</span> ${typed.replace(/\n/g, '\n')}`;
+  const tOut = ts + c1.length / 34 + .25;
+  if (t > tOut) html += `\n<span class="c">Cloning into '~/.claude/skills/bankable'… done.</span>`;
+  const ts2 = tOut + .45;
+  if (t > ts2) html += `\n<span class="p">$</span> ` + typeTxt('claude', t, ts2, 18);
+  const ts3 = ts2 + .65;
+  if (t > ts3) html += `\n<span class="y">›</span> ` + typeTxt('/bankable', t, ts3, 16);
+  const blink = Math.floor(t * 2.2) % 2 === 0 || (t > ts && !done1);
+  $('term').innerHTML = html + (blink ? '<span class="caret"></span>' : '');
+};
+S.s4 = (t, sc) => {
+  rv($('s4h'), t, .1);
+  rv($('comp'), t, .2, {y: 40, s: .98});
+  const txt = 'Write an investor-grade business plan with a financial model. Where data is missing, make reasonable assumptions — and list what I need to confirm.';
+  const ty = typeTxt(txt, t, .45, 78);
+  $('ptxt').innerHTML = ty + ((ty.length < txt.length || Math.floor(t * 2.2) % 2 === 0) ? '<span class="caret" style="height:36px;background:var(--blue)"></span>' : '');
+  ['a1','a2','a3'].forEach((a, i) => rv($(a), t, La(sc, 0, .42) + i * .16, {y: 18, s: .9}));
+  rv($('reader'), t, La(sc, 0, .7) - .1, {y: 12});
+  const kr = P(t, La(sc, 0, .74), .4);
+  $('rchip').style.borderColor = `rgba(59,140,255,${.15 + .7 * kr})`; $('rchip').style.boxShadow = `0 0 ${24*kr}px rgba(59,140,255,${.45*kr})`;
+  $('rchip').style.background = `rgba(59,140,255,${.04 + .12 * kr})`;
+  const ks = P(t, 4.45, .3);
+  const pulse = t > 4.45 ? Math.max(0, 1 - (t - 4.45) / .7) : 0;
+  $('send').style.boxShadow = `0 0 0 ${18 * (1 - pulse)}px rgba(59,140,255,${.35 * pulse}), 0 0 ${40*ks}px rgba(59,140,255,${.6*ks})`;
+  $('comp').style.borderColor = `rgba(59,140,255,${.1 + .4 * ks})`;
+};
+S.s5 = (t, sc) => {
+  rv($('s5h'), t, .1);
+  const act = [La(sc,0,0), La(sc,0,.22), La(sc,0,.46), La(sc,0,.62), La(sc,0,.76), La(sc,1,.16), La(sc,1,.33), La(sc,1,.93)];
+  act.forEach((a, i) => {
+    const n = $('n' + i); rv(n, t, .25 + i * .07, {y: 30});
+    const k = P(t, a, .5);
+    const col = i === 4 ? '255,122,69' : (i === 6 ? '255,183,43' : '59,140,255');
+    const c = n.querySelector('.c');
+    c.style.borderColor = `rgba(${col},${.2 + .8 * k})`; c.style.background = `linear-gradient(rgba(${col},${.04 + .2 * k}),rgba(${col},${.04 + .2 * k})), #0b111c`;
+    c.style.color = k > .5 ? '#fff' : 'var(--muted)'; c.style.boxShadow = `0 0 ${36*k}px rgba(${col},${.55*k})`;
+    c.style.transform = `scale(${1 + .12 * k * Math.max(0, 1 - (t - a - .5) / .8) + (i === 4 ? .08 * k : 0)})`;
+    n.querySelector('.nm').style.color = k > .5 ? '#fff' : 'var(--muted)';
+    n.querySelector('.ds').style.opacity = .35 + .65 * k;
+  });
+  // line fill follows the most recent activation, with easing between nodes
+  let fx = 0;
+  for (let i = 0; i < 8; i++) { const k = P(t, act[i] - .35, .55, E.io); if (k > 0) fx = (i - 1 + k) / 7; }
+  $('wfill').style.width = (cl(fx) * 1460) + 'px';
+  const rvT = [La(sc,1,.45), La(sc,1,.57), La(sc,1,.69), La(sc,1,.86)];
+  rvT.forEach((a, i) => rv($('rv' + i), t, a - .1, {y: 40, s: .94}));
+};
+S.s6 = (t, sc) => {
+  rv($('s6h'), t, .1);
+  const ra = [La(sc,0,0), La(sc,0,.22), La(sc,0,.42), La(sc,0,.78)];
+  ra.forEach((a, i) => {
+    const d = $('rd' + i); rv(d, t, a - .05, {y: 60, s: .96});
+    const kw = P(t, La(sc, 1, .05) + i * .1, 1.0, E.io);
+    d.querySelectorAll('.wt i').forEach(e => e.style.width = (kw * parseFloat(e.dataset.w) * 200) + 'px');
+    d.querySelectorAll('.mt .chip').forEach((c, j) => rv(c, t, La(sc, 1, .45) + i * .08 + j * .1, {y: 12, s: .85, b: 4}));
+  });
+};
+S.s7 = (t, sc) => {
+  rv($('s7h'), t, .1);
+  const oa = [La(sc,0,0), La(sc,1,0), La(sc,2,0), La(sc,3,0)];
+  oa.forEach((a, i) => rv($('o' + (i+1)), t, a - .2, {y: 60, s: .96}));
+  // word pages fan
+  ['pg1','pg2','pg3'].forEach((p, i) => { const k = P(t, oa[0] + .1 + i * .15, .8, E.out5); st($(p), {o: k, y: (1-k) * 40, r: (i - 1) * 7 * k, x: (i - 1) * 6 * k}); });
+  [['lg1', .48], ['lg2', .66], ['lg3', .84]].forEach(([l, f]) => { const k = rv($(l), t, La(sc, 0, f), {y: 10, s: .85, b: 4});
+    const hi = P(t, La(sc, 0, f), .3) * (1 - (l === 'lg3' ? 0 : P(t, La(sc, 0, f) + .55, .3)));
+    $(l).style.borderColor = `rgba(59,140,255,${.12 + .7 * hi})`; $(l).style.background = `rgba(59,140,255,${.04 + .14 * hi})`; });
+  // excel lines draw
+  ['ln2','ln1','ln3'].forEach((l, i) => { const e = $(l); const L = e.getTotalLength(); e.style.strokeDasharray = L; e.style.strokeDashoffset = L * (1 - P(t, oa[1] + .2 + i * .25, 1.1, E.io)); });
+  document.querySelectorAll('#torn .tb').forEach((r, i) => { const k = P(t, oa[1] + 1.6 + i * .12, .7, E.io); const l = +r.dataset.l;
+    r.setAttribute('x', 160 + l * k); r.setAttribute('width', -l * k); const r2 = r.nextElementSibling; r2.setAttribute('width', +r.dataset.r * k); });
+  REG.forEach((_, i) => rv($('rr' + i), t, oa[2] + .05 + i * .12, {y: 14, x: -10}));
+  SLD.forEach((_, i) => rv($('sl' + i), t, oa[3] + .1 + i * .12, {y: 24, s: .9}));
+  // tie: same numbers
+  const kt = P(t, La(sc, 3, .45), .9, E.io);
+  ['k1','k2','k3','k4'].forEach((k, i) => { const e = $(k); const kk = P(t, La(sc, 3, .45) + i * .08, .4);
+    rv(e, t, oa[i] + .4, {y: 10});
+    e.style.borderColor = `rgba(59,140,255,${.12 + .75 * kk})`; e.style.boxShadow = `0 0 ${28*kk}px rgba(59,140,255,${.45*kk})`;
+    e.querySelector('b').style.color = kk > .5 ? '#9fc6ff' : '#fff'; });
+  const tie = $('tie'); tie.style.opacity = kt; tie.style.clipPath = `inset(0 ${(1 - kt) * 50}% 0 ${(1 - kt) * 50}%)`;
+};
+S.s8 = (t, sc) => {
+  rv($('s8h'), t, .1);
+  rv($('edit'), t, .25, {y: 40, s: .97});
+  const a = .75;
+  $('strike').style.width = (P(t, a, .35, E.io) * 108) + '%';
+  $('old').style.color = t > a + .2 ? 'var(--muted)' : '#c9d1de';
+  $('new').textContent = typeTxt('£10.50', t, a + .4, 14);
+  st($('arr'), {o: P(t, a + .3, .3)});
+  rv($('conf'), t, a + .95, {y: 8});
+  rv($('rerun'), t, .5, {y: 20, s: .8});
+  const r0 = La(sc, 0, .33);
+  const spin = P(t, r0, 1.2, E.io) * 720;
+  $('rsv').style.transform = `rotate(${spin}deg)`;
+  const kp = Math.max(0, 1 - Math.abs(t - r0 - .6) / .8);
+  $('rerun').style.boxShadow = `0 0 ${60*kp}px rgba(59,140,255,${.6*kp})`;
+  const ku = P(t, r0 + .5, 1.3, E.io);
+  const vals = [[8.64, 7.56, v => '£' + v.toFixed(2) + 'm', '−12.5%'], [24.1, 18.7, v => v.toFixed(1) + '%', '−5.4 pt'], [21.4, 16.2, v => v.toFixed(1) + '%', '−5.2 pt'], [4.6, 5.3, v => v.toFixed(1) + ' yrs', '+0.7 yr']];
+  vals.forEach((v, i) => { rv($('t' + (i+1)), t, .35 + i * .1, {y: 40, s: .96});
+    const kk = P(t, r0 + .5 + i * .1, 1.2, E.io);
+    $('v' + (i+1)).textContent = v[2](v[0] + (v[1] - v[0]) * kk);
+    $('v' + (i+1)).style.color = kk > 0 && kk < 1 ? '#9fc6ff' : '#fff';
+    const dd = $('d' + (i+1)); dd.textContent = v[3]; dd.style.color = i === 3 ? 'var(--orange)' : 'var(--orange)'; st(dd, {o: P(t, r0 + 1.6 + i * .1, .3)}); });
+  rv($('badge'), t, La(sc, 0, .92), {y: 16, s: .9});
+};
+S.s9 = (t, sc) => {
+  const k = P(t, .1, 1.0, E.back);
+  st($('s9mark'), {o: P(t, .1, .4), s: .6 + .4 * k});
+  st($('s9glow'), {o: P(t, .1, 1) * (.7 + .3 * Math.sin(t * 1.8)), s: .8 + .2 * P(t, .1, 1.5)});
+  rv($('wordm9'), t, .35, {y: 30, b: 14});
+  rv($('s9line'), t, La(sc, 1, 0) - .1, {y: 22}); rv($('s9zh'), t, La(sc, 1, .4), {y: 14});
+  rv($('s9url'), t, La(sc, 1, .9), {y: 18}); rv($('s9fmt'), t, La(sc, 1, .9) + .35, {y: 10});
+  // final fade to background
+  const kf = P(t, sc.dur - .9, .9, E.io);
+  $('s9').style.opacity = 1 - kf;
+};
+
+function render(i, t) {
+  const sc = TL.scenes[i]; const g = sc.start + t;
+  TL.scenes.forEach((s, j) => { const el = $(s.id); el.style.display = j === i ? 'block' : 'none'; });
+  const el = $(sc.id);
+  el.style.opacity = 1; el.style.transform = 'none'; el.style.filter = 'none';
+  S[sc.id](t, sc);
+  if (sc.id !== 's9') sceneOut(el, t, sc.dur);
+  // background drift
+  st($('orb1'), {x: 200 + 260 * Math.sin(g * .07), y: -520 + 140 * Math.cos(g * .05)});
+  st($('orb2'), {x: 900 + 220 * Math.cos(g * .06), y: 120 + 120 * Math.sin(g * .08)});
+  st($('orb3'), {x: -300 + 200 * Math.sin(g * .05 + 1), y: 250 + 100 * Math.cos(g * .07)});
+  // chrome: visible in scenes 2..8
+  const s2 = TL.scenes[1].start, s9 = TL.scenes[8].start;
+  const co = P(g, s2 + .1, .6) * (1 - P(g, s9 - .5, .5));
+  st($('chrome'), {o: co, y: (1 - P(g, s2 + .1, .6)) * -10});
+  $('progf').style.width = (g / TL.total * 100) + '%';
+  $('prog').style.opacity = .9 * (1 - P(g, TL.total - .9, .9));
+  // captions
+  let cur = null, co2 = 0;
+  if (sc.id !== 's9') sc.lines.forEach((l, j) => {
+    const nxt = sc.lines[j + 1]; const end = nxt ? Math.min(l.b + .35, nxt.a - .05) : l.b + .4;
+    if (t >= l.a - .12 && t <= end) { cur = l; co2 = Math.min(P(t, l.a - .12, .18, E.lin), 1 - P(t, end - .18, .18, E.lin)); }
+  });
+  $('cen').textContent = cur ? cur.en : ''; $('czh').textContent = cur ? cur.zh : '';
+  st($('cap'), {o: co2, y: (1 - co2) * 6});
+}
+window.render = render;
+window.TL = TL;
+</script>
+</body></html>

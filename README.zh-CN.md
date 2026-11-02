@@ -20,6 +20,14 @@
 
 > **Bankable** is a Claude skill for business plans that survive due diligence: investor-, lender-, government- and board-grade. Interview → fact / assumption / evidence register → research → Excel three-statement model with scenarios and sensitivity → audience-specific drafting → narrative-vs-model consistency check → red-team review → Word / bilingual / Excel / PPT. Chinese-first, any industry.
 
+## 80 秒看懂 Bankable
+
+<p align="center">
+  <a href="docs/video/bankable-guide.mp4"><img src="docs/images/video_poster.jpg" alt="观看 Bankable 使用指导视频（1:21，英文配音，中英字幕）" width="100%"></a>
+</p>
+
+<p align="center"><sub>三条原则 · 安装 · 怎么提需求 · 八步流程 · 四类读者 · 交付成果 · 改假设重跑 —— <a href="docs/video/bankable-guide.mp4">播放视频</a>（1:21，英文配音，中英双语字幕）</sub></p>
+
 ## 三步上手
 
 **1. 安装**
@@ -97,7 +105,7 @@ assets/                  假设文件示例 · 15 章写作骨架 · 登记册�
 evals/                   5 个测试用例：投资人版 / 银行 + 存量业务 / 政府 + 董事会双语 + PPT / 英国奶牛场贷款（£）/ 荷兰初创 A 轮 + 欧盟补助（€）
 examples/                虚构案例的 Excel 模型与 Word 排版样例
 samples/                 一次完整试跑的全部产出
-docs/                    README 配图（中/英）及其 HTML 源（python docs/render.py 重新生成）
+docs/                    README 配图（中/英）及其 HTML 源（python docs/render.py 重新生成）；docs/video/ 指导视频及其源文件
 tests/smoke_test.sh      脚本冒烟测试（CI 运行）
 ```
 
