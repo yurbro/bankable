@@ -1,123 +1,131 @@
 <p align="center">
-  <img src="docs/images/banner.png" alt="Bankable — 经得起拷问的商业计划书" width="100%">
+  <a href="README.md"><img alt="English" src="https://img.shields.io/badge/English-current-2a78d6?style=for-the-badge"></a>
+  <a href="README.zh-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/简体中文-README-555?style=for-the-badge"></a>
 </p>
 
 <p align="center">
-  <a href="#三步上手"><img alt="Claude skill" src="https://img.shields.io/badge/Claude-skill-2a78d6"></a>
-  <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-1baf7a"></a>
-  <a href="CHANGELOG.md"><img alt="version" src="https://img.shields.io/badge/version-0.3.0-eb6834"></a>
-  <img alt="language" src="https://img.shields.io/badge/%E8%AF%AD%E8%A8%80-%E4%B8%AD%E6%96%87%20%2F%20EN-eda100">
+  <img src="docs/images/banner_en.png" alt="Bankable — business plans that survive due diligence" width="100%">
 </p>
 
-**Bankable** 是一个 Claude skill：把一个业务构想或一堆零散材料，变成**经得起投资人、银行、政府评审和董事会拷问**的商业计划书——数字先于故事，每个主张都有出处，按读者定制。
+<p align="center">
+  <a href="#get-started-in-three-steps"><img alt="Claude skill" src="https://img.shields.io/badge/Claude-skill-2a78d6"></a>
+  <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-1baf7a"></a>
+  <a href="CHANGELOG.md"><img alt="version" src="https://img.shields.io/badge/version-0.3.0-eb6834"></a>
+  <img alt="languages" src="https://img.shields.io/badge/output-English%20%7C%20中文%20%7C%20bilingual-eda100">
+</p>
 
-交付四件互相勾稽的东西：中文 Word 计划书（可选英文版）、可重算的 Excel 三表财务模型（三情景 + 敏感性）、供逐条确认的假设与证据登记册、路演 PPT。行业无关，自带农牧、制造、SaaS、消费、新能源、医疗、文旅、贸易等行业模块。
+**Bankable** is a Claude skill that turns a business idea — or a folder of half-finished material — into a business plan that **survives due diligence by investors, banks, government reviewers and boards**. Numbers come before narrative, every claim has a source, and the document is tailored to who will read it.
 
-> **Bankable** is a Claude skill for business plans that survive due diligence: investor-, lender-, government- and board-grade. Interview → fact / assumption / evidence register → research → Excel three-statement model with scenarios and sensitivity → audience-specific drafting → narrative-vs-model consistency check → red-team review → Word / bilingual / Excel / PPT. Chinese-first, any industry.
+It delivers four things that reconcile with each other: a Word business plan (English, Chinese or both), a live Excel three-statement model with scenarios and sensitivity, an assumptions-and-evidence register you confirm line by line, and a pitch deck. Industry-agnostic, with sector modules for agriculture, manufacturing, SaaS, consumer, clean energy, healthcare, tourism and trade.
 
-## 三步上手
+> **Bankable**（经得起拷问的商业计划书）是一个 Claude skill：数字先于故事、每个主张都有出处、按读者定制。中文说明见 [README.zh-CN.md](README.zh-CN.md)。
 
-**1. 安装**
+## Get started in three steps
 
-| 在哪里用 | 怎么装 |
+**1. Install**
+
+| Where you use Claude | How |
 |---|---|
-| Claude.ai / 桌面版 | 从 [Releases](../../releases) 下载 `bankable.skill` → 设置 → 功能 → 开启"代码执行与文件创建" → Skills → 上传 → 打开开关 |
-| Claude Code | `git clone https://github.com/yurbro/bankable.git ~/.claude/skills/bankable`（项目内：`.claude/skills/bankable`），或 `npx skills add yurbro/bankable` |
-| Codex / Cursor 等 | 克隆到对应的 skills 目录，或让 agent 读 `SKILL.md` 并按其指引执行 |
+| Claude.ai / desktop app | Download `bankable.skill` from [Releases](../../releases) → Settings → Capabilities → enable *Code execution and file creation* → Skills → Upload → toggle on |
+| Claude Code | `git clone https://github.com/yurbro/bankable.git ~/.claude/skills/bankable` (or into `.claude/skills/bankable` inside a project), or `npx skills add yurbro/bankable` |
+| Codex / Cursor / other SKILL.md-aware agents | Clone into the agent's skills directory, or point the agent at `SKILL.md` |
 
-脚本依赖 Python 3.10+ 与 `openpyxl` `python-docx` `python-pptx` `matplotlib`，重算 Excel 需要 LibreOffice（`soffice`）；Claude.ai 的代码执行环境已具备。本机：`pip install openpyxl python-docx python-pptx matplotlib`，LibreOffice 用 `brew install --cask libreoffice` 或 `apt install libreoffice-calc fonts-noto-cjk`。
+The scripts need Python 3.10+ with `openpyxl`, `python-docx`, `python-pptx` and `matplotlib`; recalculating the Excel model needs LibreOffice (`soffice` on PATH). Claude.ai's code-execution sandbox already has all of this. Locally: `pip install openpyxl python-docx python-pptx matplotlib` and `brew install --cask libreoffice` or `apt install libreoffice-calc fonts-noto-cjk`.
 
-**2. 说需求，附上手头的材料**
+**2. Describe what you need and attach what you have**
 
 ```
-给我写一份能直接给投资机构看的商业计划书，附财务模型。我们是……（一段介绍）
-缺的数据先按合理假设做，然后把需要我确认的地方列出来。
+Write an investor-grade business plan with a financial model. We are … (one paragraph).
+Where data is missing, make reasonable assumptions and list what I need to confirm.
 ```
 ```
-向农商行申请 600 万 5 年期贷款，附件是近两年财务摘要，重点看还款能力。
+We're applying to our bank for a £2.2m 15-year loan; last two years' accounts attached.
+The bank wants cash-flow forecasts and sensitivity to milk price.
 ```
 ```
-申报省级专项资金，同时董事会下周要立项。中英文各一份 Word，附 Excel，再做 12 页汇报 PPT。
+Business plan for a provincial circular-economy grant application, and the board decides next week.
+Chinese and English Word versions, Excel model, 12-slide deck.
 ```
 
-Claude 会先问最多 8 个关键问题（你不在也会按稳妥假设推进），然后研究、建模、起草、核对、评审。完整版通常 25–45 页，约 1 小时；说"快速 / 简版"切到 10–15 页的精简模式。
+Claude asks at most eight questions up front (and proceeds on defensible, registered assumptions if you are away), then researches, builds the model, drafts, checks and red-teams the plan. A full plan is 25–50 pages and takes about an hour; say "quick" or "short version" for a 10–15 page plan.
 
-**3. 逐条确认登记册，重跑**
+**3. Confirm the register, rerun**
 
-交付说明会列出影响最大的假设和 `[待补充]` 项。你改好登记册或直接改 Excel 假设表的蓝字单元格，Claude 重跑模型，正文数字一起更新。
+The delivery note lists the assumptions that matter most and every `[to be provided]` gap. Correct the register — or edit the blue input cells in the Excel assumptions sheet — and Claude reruns the model; every figure in the text updates with it.
 
-## 工作流程
+## Workflow
 
-<p align="center"><img src="docs/images/workflow.png" alt="八步流程" width="100%"></p>
+<p align="center"><img src="docs/images/workflow_en.png" alt="Eight-step workflow" width="100%"></p>
 
-## 按读者切换
+## Reader-aware
 
-<p align="center"><img src="docs/images/audience.png" alt="四类读者" width="100%"></p>
+<p align="center"><img src="docs/images/audience_en.png" alt="Four readers" width="100%"></p>
 
-## 交付什么
+## What you get
 
-<p align="center"><img src="docs/images/outputs.png" alt="交付物" width="100%"></p>
+<p align="center"><img src="docs/images/outputs_en.png" alt="Deliverables" width="100%"></p>
 
-完整样件在 [`samples/`](samples/)（虚构的杭州陶瓷膜案例：47 页计划书、模型、登记册、评审备忘、交付说明）。
+Full sample runs are in [`samples/`](samples/): a Chinese investor plan for a fictional ceramic-membrane start-up (47 pages), and English GBP/EUR cases — a North Yorkshire dairy farm applying for a bank loan with Defra grants, and a Rotterdam textile-to-rPET start-up raising a Series A alongside an EU grant.
 
-## 和"让 AI 写个 BP"的区别
+## How it differs from "ask an AI for a business plan"
 
-| 普通做法 | Bankable |
+| Typical approach | Bankable |
 |---|---|
-| 一次生成，数字凭感觉 | **先建模型再写叙述**；正文只能引用模型算出的数字，`check_consistency.py` 自动核对 |
-| 事实、假设、推断混在一起 | 登记册分开 F 事实 / A 假设 / E 推断 / T 待补充，每条有来源、证据等级（A–D）、置信度、"需确认" |
-| 缺信息就编一个像样的 | 公司历史、客户、合同、资质、团队履历一律不编，标 `[待补充]` |
-| 一套内容给所有人看 | 按主读者切换章节权重与指标；多读者时一份主文档 + 定制执行摘要 + 专章 |
-| 只有乐观情景 | 基准 / 下行 / 上行三情景由风险矩阵推导，另有单因素敏感性龙卷风图 |
-| 自己觉得写得不错 | 以投资人、信贷审查、政府评审、CFO 四种身份红队评审，写评审备忘 |
+| One pass; numbers by feel | **Model first, narrative second**; the text may quote only model output, and `check_consistency.py` enforces it |
+| Facts, assumptions and guesses blended | A register separates F facts / A assumptions / E inferences / T to-provide, each with source, evidence grade (A–D), confidence and a confirm flag |
+| Missing data gets a plausible invention | Company history, customers, contracts, licences and team bios are never invented — they are marked `[to be provided]` |
+| One text for every reader | Chapter weights and metrics switch with the primary reader; several readers get one master document plus tailored summaries and dedicated chapters |
+| Only the optimistic case | Base / downside / upside derived from the risk matrix, plus single-factor sensitivity (tornado chart) and whole-alternative comparisons |
+| Self-assessed quality | Red-team review from investor, credit-officer, government-reviewer and CFO perspectives, written up as a review memo |
 
-三个测试用例（投资人版 / 银行贷款 + 存量业务 / 政府申报 + 董事会 + 中英双语 + PPT）全部通过各自的验收标准（7/7、5/5、6/6）；投资人版的对照组（不带 skill）为 5/7——缺的正是证据登记册和正文与模型的一致性核对。三次试跑暴露的问题已修入 v0.3.0。
+Five eval cases (investor plan from a brief; bank loan for an existing cooperative; government grant + board decision, bilingual with deck; UK dairy farm loan with grants in GBP; Dutch start-up Series A with EU grant in EUR) pass their acceptance criteria. On the investor case the control run without the skill scored 5/7 — it lacked exactly the evidence register and the narrative-vs-model check.
 
-## 仓库结构
+## Repository layout
 
 ```
-SKILL.md                 流程、规则、质量底线（Claude 触发后首先读取）
-references/              按阶段加载：访谈问题库 · 证据与登记册 · 读者画像 · 章节指南 · 财务模型指南 ·
-                         评审清单 · PPT 指南 · 双语规范 · 行业模块
+SKILL.md                 workflow, rules and quality bar — what Claude reads first (Chinese)
+references/              loaded per stage: interview questions · evidence & register · audience profiles · chapter guide ·
+                         financial-model guide · review checklist · deck guide · bilingual guide · industry modules
 scripts/
-  build_financial_model.py   assumptions.json → 带公式的 Excel 三表模型（多笔贷款与还款/提款计划、补助、期初余额、建设期在建工程、亏损结转）
-  recalc_and_extract.py      LibreOffice 重算 · 三情景 · model_outputs.json · 写回情景对比
-  run_sensitivity.py         单因素敏感性 + 备选方案比较：表格 + 龙卷风图 + JSON（中/英）
-  make_tables.py             正文全部财务表格（关键指标、三表、偿债、三情景、总投资与筹措、敏感性；中/英）
-  make_charts.py             财务图表 PNG（中/英）
-  build_docx.py              plan.md → 排版好的 Word（封面、目录、编号标题、表格、图、页眉页脚）
-  build_pptx.py              deck.md → PPT（没有 pptx skill 时的备选）
-  check_consistency.py       正文数字 vs 模型输出
-assets/                  假设文件示例 · 15 章写作骨架 · 登记册与评审备忘模板
-evals/                   3 个测试用例：投资人版 / 银行 + 存量业务 / 政府 + 董事会双语 + PPT
-examples/                虚构案例的 Excel 模型与 Word 排版样例
-samples/                 一次完整试跑的全部产出
-docs/                    README 配图及其 HTML 源（python docs/render.py 重新生成）
-tests/smoke_test.sh      脚本冒烟测试（CI 运行）
+  build_financial_model.py   assumptions.json → Excel three-statement model with live formulas (loans with repayment/drawdown
+                             schedules, grants, opening balance sheet, construction in progress, loss carry-forward)
+  recalc_and_extract.py      LibreOffice recalculation · 3 scenarios · model_outputs.json · scenario sheet written back
+  run_sensitivity.py         single-factor sensitivity and whole-alternative comparison: table + tornado chart + JSON (zh/en)
+  make_tables.py             every financial table for the text (KPIs, statements, debt service, scenarios, funding, sensitivity) zh/en
+  make_charts.py             chart PNGs (zh/en)
+  build_docx.py              plan.md → formatted Word (cover, TOC, numbered headings, tables, figures, headers/footers)
+  build_pptx.py              deck.md → PPT (fallback when no slide skill is available)
+  check_consistency.py       narrative figures vs model output (CNY 万元 and GBP/EUR/USD formats)
+assets/                  example assumptions file · 15-chapter skeleton · register and review-memo templates
+evals/                   5 eval cases (prompt + graders)
+examples/                example model and layout sample (fictional)
+samples/                 complete outputs of full test runs
+docs/                    README images and their HTML sources (regenerate with python docs/render.py)
+tests/smoke_test.sh      script smoke test (run in CI)
 ```
 
-## 手动跑一遍模型流水线
+## Run the model pipeline by hand
 
 ```bash
 mkdir -p work && cp assets/assumptions-example.json work/assumptions.json
-python scripts/build_financial_model.py work/assumptions.json -o work/模型.xlsx
-python scripts/recalc_and_extract.py work/模型.xlsx -o work/model_outputs.json --assumptions work/assumptions.json
-python scripts/run_sensitivity.py work/assumptions.json -o work/sensitivity_outputs.json --md work/sensitivity.md --chart work/charts/sensitivity.png
-python scripts/make_charts.py work/model_outputs.json -o work/charts
-python scripts/make_tables.py work/model_outputs.json -o work/tables.md --sensitivity work/sensitivity_outputs.json
-python scripts/build_docx.py work/plan.md -o work/计划书.docx --title "××商业计划书" --org "××公司" --date "2026年11月"
+python scripts/build_financial_model.py work/assumptions.json -o work/model.xlsx
+python scripts/recalc_and_extract.py work/model.xlsx -o work/model_outputs.json --assumptions work/assumptions.json
+python scripts/run_sensitivity.py work/assumptions.json -o work/sensitivity_outputs.json --md work/sensitivity.md --chart work/charts/sensitivity.png --lang en
+python scripts/make_charts.py work/model_outputs.json -o work/charts --lang en
+python scripts/make_tables.py work/model_outputs.json -o work/tables.md --sensitivity work/sensitivity_outputs.json --lang en
+python scripts/build_docx.py work/plan.md -o work/plan.docx --title "Business Plan" --org "Company" --date "November 2026" --lang en
 python scripts/check_consistency.py work/plan.md work/model_outputs.json --extra work/sensitivity_outputs.json
 ```
 
-## 修改与改进
+## Modify and improve
 
-1. 改 `SKILL.md` / `references/` / `scripts/`，提交。想调整读者的评审逻辑改 `references/audience-profiles.md`，调整章节改 `chapter-guide.md`，加行业改 `industry-modules.md`。
-2. 脚本回归：`bash tests/smoke_test.sh`（push 时 CI 自动跑）。
-3. 行为回归：`evals/` 里 3 个用例（`prompt.md` + `graders/`），在 Claude Code 里 `claude plugin eval . --allow-tools Write,Edit,Bash --scaffold`，或用 skill-creator 的流程人工跑。
-4. 发布：`git tag v0.3.0 && git push --tags`，Action 自动打包 `bankable.skill` 挂到 Release，供 claude.ai 上传。本地打包：`bash tests/package.sh`。
+1. Edit `SKILL.md`, `references/` or `scripts/` and commit. Reader logic lives in `references/audience-profiles.md`, chapters in `chapter-guide.md`, sectors in `industry-modules.md`.
+2. Script regression: `bash tests/smoke_test.sh` (CI runs it on every push).
+3. Behavioural regression: the cases in `evals/` (`prompt.md` + `graders/`); in Claude Code, `claude plugin eval . --allow-tools Write,Edit,Bash --scaffold`.
+4. Release: `git tag v0.4.0 && git push --tags` — the release workflow packages `bankable.skill` and attaches it to the GitHub Release for upload to Claude.ai. Locally: `bash tests/package.sh`.
 
-## 说明
+## Notes
 
-- `examples/`、`samples/`、配图中的公司与数据均为虚构或测试生成，仅用于演示格式与流程。
-- 产出是供审阅的专业首稿，不是审计报告、税务或法律意见，也不构成融资承诺。
-- 方法借鉴了若干开源商业计划 skill 的思路（假设登记与一致性核对、证据纪律、红队评审）；实现为本仓库原创，MIT 许可。
+- Companies and figures in `examples/`, `samples/` and the images are fictional or test-generated; they demonstrate format and method only.
+- Outputs are professional first drafts for review — not audited statements, tax or legal advice, and no promise of financing.
+- The method borrows ideas from several open-source business-plan skills (assumption registers with consistency checks, evidence discipline, red-team review); the implementation is original. MIT licence.

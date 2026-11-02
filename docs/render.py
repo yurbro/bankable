@@ -4,7 +4,7 @@ from playwright.async_api import async_playwright
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, "src"); OUT = os.path.join(HERE, "images")
-PAGES = ["banner", "workflow", "audience", "outputs"]
+PAGES = ["banner", "workflow", "audience", "outputs", "banner_en", "workflow_en", "audience_en", "outputs_en"]
 
 async def main():
     os.makedirs(OUT, exist_ok=True)
@@ -18,7 +18,7 @@ async def main():
             await page.screenshot(path=out, full_page=True)
             from PIL import Image
             im = Image.open(out).convert("RGB")
-            im = im.quantize(colors=256, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.FLOYDSTEINBERG) if name != "outputs" else im
+            im = im.quantize(colors=256, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.FLOYDSTEINBERG) if not name.startswith("outputs") else im
             im.save(out, optimize=True)
             print("[OK]", name, os.path.getsize(out) // 1024, "KB")
         await b.close()
