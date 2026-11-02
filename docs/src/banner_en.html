@@ -21,12 +21,27 @@
   .row { display:flex; gap:14px; flex-wrap:wrap; align-items:center; }
   .chip { font-size:19px; padding:10px 18px; border-radius:999px; border:1.5px solid #d6dbe4; background:#fff; color:var(--ink); }
   .chip b { color:var(--blue); font-weight:700; margin-right:6px; }
-  .out { display:flex; gap:18px; }
-  .card { width:215px; padding:16px 18px; border-radius:16px; background:#fff; border:1.5px solid #e3e7ee; box-shadow:0 6px 18px rgba(11,18,32,.06); }
-  .card .k { font-size:14px; color:var(--muted); letter-spacing:.5px; }
-  .card .v { font-size:19px; font-weight:700; margin-top:4px; }
-  .card.b { border-top:5px solid var(--blue);} .card.o { border-top:5px solid var(--orange);} .card.a { border-top:5px solid var(--aqua);} .card.y { border-top:5px solid var(--yellow);}
   .foot { display:flex; justify-content:space-between; align-items:flex-end; }
+.fx{display:flex;gap:28px;align-items:flex-end}
+.fi{width:160px}
+.th{height:112px;border-radius:8px;background:#fff;border:1px solid #dfe4ec;box-shadow:0 1px 0 rgba(11,18,32,.03),0 10px 24px -12px rgba(11,18,32,.25);position:relative;overflow:hidden}
+.fi .n{font-size:17px;font-weight:700;margin-top:12px;color:var(--ink)}
+.fi .f{font:500 13px/1 "DejaVu Sans Mono",monospace;color:var(--muted);margin-top:6px}
+.doc{padding:14px 16px}
+.doc:after{content:"";position:absolute;right:0;top:0;width:22px;height:22px;background:linear-gradient(225deg,#f3f5f9 50%,#dfe4ec 50%)}
+.doc i{display:block;height:5px;border-radius:3px;background:#e7ebf1;margin:6px 0}
+.doc i.t{height:8px;width:62%;background:var(--ink);margin-bottom:10px}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);grid-auto-rows:16px;border-top:16px solid #e9f6f0}
+.grid b{border-right:1px solid #eef1f5;border-bottom:1px solid #eef1f5}
+.grid b.h{background:#d6efe4}
+.reg{padding:12px 12px}
+.reg div{display:flex;align-items:center;gap:7px;margin:0 0 7px}
+.reg em{font:700 9px/14px "DejaVu Sans Mono",monospace;font-style:normal;width:16px;text-align:center;border-radius:3px;color:#fff}
+.reg span{height:5px;border-radius:3px;background:#e7ebf1;flex:1}
+.sld{background:#0e1626;border-color:#0e1626}
+.sld i{position:absolute;bottom:16px;width:14px;border-radius:2px 2px 0 0;background:#3b8cff}
+.sld b{position:absolute;left:14px;top:14px;width:58px;height:7px;border-radius:3px;background:#fff}
+.out{display:flex}
 </style>
 </head>
 <body>
@@ -42,11 +57,11 @@
       <span class="chip"><b>Industry</b>Any, with sector modules</span>
       <span class="chip"><b>Language</b>Chinese / bilingual EN</span>
     </div>
-    <div class="out">
-      <div class="card b"><div class="k">WORD</div><div class="v">Business plan</div></div>
-      <div class="card o"><div class="k">EXCEL</div><div class="v">3-statement model</div></div>
-      <div class="card a"><div class="k">MARKDOWN</div><div class="v">Evidence register</div></div>
-      <div class="card y"><div class="k">PPT</div><div class="v">Pitch deck</div></div>
+    <div class="out fx">
+      <div class="fi"><div class="th doc"><i class="t"></i><i></i><i style="width:88%"></i><i></i><i style="width:70%"></i><i style="width:80%"></i></div><div class="n">Business plan</div><div class="f">plan.docx</div></div>
+      <div class="fi"><div class="th"><div class="grid"><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b class="h"></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b></div></div><div class="n">Financial model</div><div class="f">model.xlsx</div></div>
+      <div class="fi"><div class="th reg"><div><em style="background:#2a78d6">F</em><span style="flex:0.9"></span></div><div><em style="background:#eda100">A</em><span style="flex:0.7"></span></div><div><em style="background:#8a6fd8">E</em><span style="flex:0.8"></span></div><div><em style="background:#eb6834">T</em><span style="flex:0.5"></span></div><div><em style="background:#eda100">A</em><span style="flex:0.65"></span></div></div><div class="n">Evidence register</div><div class="f">register.md</div></div>
+      <div class="fi"><div class="th sld"><b></b><i style="left:16px;height:20px"></i><i style="left:36px;height:32px"></i><i style="left:56px;height:46px"></i><i style="left:76px;height:62px;background:#eb6834"></i></div><div class="n">Pitch deck</div><div class="f">deck.pptx</div></div>
     </div>
   </div>
 </div>
