@@ -40,7 +40,7 @@ description: Bankable——撰写经得起投资人、银行、政府评审和�
 先读完用户给的全部材料（文档、表格、旧版 BP、调研、财务数据），再做任何判断。然后确定五件事：
 
 1. **读者是谁**：股权投资人 / 银行或贷款机构 / 政府申报、补贴或园区招商 / 内部战略、董事会或合作伙伴。可以多选，但要定一个**主读者**决定章节权重，其余读者通过定制的执行摘要和附录覆盖（见 `audience-profiles.md` 的"多读者策略"）。
-2. **产出什么**：默认中文 Word + Excel 模型；用户要求时加 PPT、英文版。
+2. **产出什么、什么语言**：默认中文 Word + Excel 模型；用户要求时加 PPT、英文版。用户用英文提需求或读者在境外时，整套交付物用英文：模型 `--lang en`、重算 `--lang en`、表格/图表/敏感性/核对/Word 都加 `--lang en`，登记册与评审备忘用英文模板（`assets/*.en.md`），金额单位按当地习惯（£k、€k、$k 或 RMB million），费用类别可直接写英文（selling / g&a / r&d / other / cogs）。英文流程细节见 `references/bilingual-guide.md` 的"英文优先的项目"。
 3. **业务处于什么阶段**：构想期 / 初创期 / 成长期 / 成熟企业新项目。阶段决定历史数据有多少、预测期多长、哪些章节能写实。
 4. **深度模式**：默认做完整版（25–45 页、全部章节、联网研究、三情景 + 敏感性，通常要一个小时上下）。用户说"快速""简版""先出个框架""今晚就要"时做精简版：10–15 页、只保留主读者 ★★★ 章节、研究只查市场规模与政策两项、财务只跑基准 + 下行；交付说明里写明是精简版及省略了什么。
 5. **环境能做什么**：检查是否能运行 Python（openpyxl、python-docx、python-pptx）、是否有 LibreOffice（`soffice`，用于重算 Excel）、能否联网。缺什么就在交付说明里讲清楚影响（例如无 LibreOffice 时 Excel 在打开时才会计算，核对脚本改用 Python 侧计算）。
@@ -80,11 +80,11 @@ description: Bankable——撰写经得起投资人、银行、政府评审和�
 # 1. 从 assets/assumptions-example.json 复制一份，按登记册填写假设（每条假设带来源编号）
 cp assets/assumptions-example.json work/assumptions.json
 
-# 2. 生成带公式的 Excel 三表模型（会先校验假设文件，报错信息指向具体字段）
+# 2. 生成带公式的 Excel 三表模型（会先校验假设文件，报错信息指向具体字段）；英文项目加 --lang en
 python scripts/build_financial_model.py work/assumptions.json -o work/模型.xlsx
 
-# 3. 用 LibreOffice 重算、跑三种情景、导出结构化输出，并把情景对比写回 Excel
-python scripts/recalc_and_extract.py work/模型.xlsx -o work/model_outputs.json
+# 3. 用 LibreOffice 重算、跑三种情景、导出结构化输出，并把情景对比写回 Excel（英文项目同样 --lang en）
+python scripts/recalc_and_extract.py work/模型.xlsx -o work/model_outputs.json --assumptions work/assumptions.json
 
 # 4. 生成财务图表 PNG，供 Word/PPT 引用
 python scripts/make_charts.py work/model_outputs.json -o work/charts/
@@ -201,10 +201,11 @@ bankable/
 │   ├── make_charts.py               从 model_outputs.json 生成财务图表 PNG（中/英）
 │   ├── build_docx.py                plan.md → 排版好的 Word（中/英）
 │   ├── build_pptx.py                deck.md → PPT（无 pptx skill 时的备选）
-│   └── check_consistency.py         正文数字 vs 模型输出核对
+│   ├── model_i18n.py                模型英文化词典（--lang en 时由 builder 调用）
+│   └── check_consistency.py         正文数字 vs 模型输出核对（中/英报告）
 └── assets/
     ├── assumptions-example.json     假设文件示例（虚构案例，含每个字段的说明）
     ├── plan-skeleton.md             章节骨架与写作提示
-    ├── register-template.md         登记册模板
-    └── review-memo-template.md      评审备忘模板
+    ├── register-template.md         登记册模板（英文版 register-template.en.md）
+    └── review-memo-template.md      评审备忘模板（英文版 review-memo-template.en.md）
 ```

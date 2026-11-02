@@ -22,6 +22,8 @@
 
 ## 工作簿结构
 
+英文项目用 `--lang en` 生成：工作表名（Assumptions / Revenue / Opex / Capex & Depreciation / Financing / Income Statement / Balance Sheet / Cash Flow / Indicators / Scenarios / Monthly Cash / Source Log）和全部固定标签为英文，用户在假设文件里写的名称原样保留；`recalc_and_extract.py --lang en` 同步英文化情景表与 narrative_numbers（£k/€k/$k 单位会写成 "£2,040k" / "£2.87m"）。
+
 | 工作表 | 内容 | 谁改 |
 |---|---|---|
 | 说明 | 结构、颜色约定、简化处理、免责 | 不改 |
@@ -65,12 +67,12 @@ revenue_lines[]                  每条收入线
   source                         登记册编号
 
 opex_lines[]                     固定/半固定费用
-  id, name, category             category ∈ 销售费用/管理费用/研发费用/其他费用
+  id, name, category             category ∈ 销售费用/管理费用/研发费用/其他费用，或英文 selling / g&a (admin, overheads) / r&d / other
   values                         序列，或 {"pct_of_revenue": 0.04} 按收入比例
   source
 
 headcount[]                      人员（成本 = 人数 × 人均年成本）
-  role, category                 category 可为上述四类或 "营业成本"（生产人工计入营业成本）
+  role, category                 category 可为上述四类或 "营业成本"（英文 cogs / production / direct labour；生产人工计入营业成本）
   count                          人数序列
   annual_cost, cost_growth       首年人均年成本、年涨幅
 
@@ -92,10 +94,12 @@ financing
             补助能否到位是不确定事项：用敏感性案例 {"patch": "json", "path": "financing.grants", "value": []} 跑“无补助”情形并在风险章披露
   loans[]:  {id, name, amount, year, rate, term_years, grace_years, schedule?, drawdown?}
             默认提款年一次提足、等额本金；宽限期内只付息；还本年份 = 提款年+宽限期 … 提款年+期限−1
-            schedule（可选）= 长度 years 的数组，各预测年偿还本金，合计须等于 amount；
-            到期一次还本就只在最后一年填金额；给了 schedule 则忽略 term/grace 的还本规则（利息仍按余额计）
+            schedule（可选）= 长度 years 的数组，各预测年偿还本金，合计 ≤ amount（20 年期贷款在 10 年预测期内只还一部分，
+            余额留在期末借款余额里）；到期一次还本就只在最后一年填金额；给了 schedule 则忽略 term/grace 的还本规则（利息仍按余额计）
             drawdown（可选）= 长度 years 的数组，分期提款（按建设进度），合计须等于 amount；分期提款必须同时给 schedule
+            循环额度 / 透支：用一笔贷款 + schedule 近似（按预计动用与归还填），正文说明是额度而非定期贷款
   dividend_payout                分红比例（占正净利润），默认 0
+  fixed_distributions            固定分配 / 合伙人提款（序列），与比例分红叠加；英国 partnership 的 drawings 用这个
   use_of_funds[]                 {name, amount}，用于资金用途图与融资章节，不参与计算
 
 tax
@@ -120,8 +124,9 @@ monthly_year1（可选）
 opening_balance（存量业务，或已有少量经营的初创企业）
   cash, accounts_receivable, inventory, other_current_assets, fixed_assets_net, fixed_assets_remaining_life,
   accounts_payable, loans, loan_rate, loan_remaining_years, paid_in_capital, capital_reserve, retained_earnings
-  loan_schedule（可选）          存量借款的逐年还本数组（长度 years，合计 = loans），已知还款表或到期一次还本时用；
-                                 不填则按 loan_remaining_years 直线偿还
+  land                           土地 / 不折旧资产（资产负债表单列，不折旧）
+  loan_schedule（可选）          存量借款的逐年还本数组（长度 years，合计 ≤ loans；期限超出预测期时余额留在期末），
+                                 已知还款表或到期一次还本时用；不填则按 loan_remaining_years 直线偿还
   （资产必须 = 负债 + 权益，否则脚本报错；通常用 retained_earnings 配平，并在登记册注明）
 
 sources[]（可选）                 {id, content, source, grade, confidence, impact, confirm}，写入来源日志
@@ -174,12 +179,14 @@ python scripts/run_sensitivity.py work/assumptions.json -o work/sensitivity_outp
 
 默认 12 个案例（销量 ±20%、价格 ±10%、单位成本 ±10%、费用 ±10%、资本开支 ±20%、应收账期 ±30 天），输出表格（可直接贴进 11.8 节）、龙卷风图和 JSON。正文引用这些数字时，把 `sensitivity_outputs.json` 作为 `check_consistency.py --extra` 传入。
 
-结构性备选方案（银行最常问的）用 `--cases` 写 `patch: json` 案例，路径支持列表索引：
+`--cases` 默认追加在 12 个标准案例之后（`--cases-only` 只跑自定义）。结构性备选方案（银行最常问的）用 `patch: json` 案例，路径支持列表索引，一次改多处用 `patches`：
 
 ```json
 [{"id": "rate+1", "label": "贷款利率 +100bp", "patch": "json", "path": "financing.loans.0.rate", "value": 0.055},
  {"id": "nograce", "label": "无宽限期", "patch": "json", "path": "financing.loans.0.grace_years", "value": 0},
  {"id": "noB", "label": "没有 B 轮", "patch": "json", "path": "financing.equity.1.amount", "value": 0},
+ {"id": "rates", "label": "两笔贷款各 +100bp", "patch": "json", "patches": [{"path": "financing.loans.0.rate", "value": 0.065}, {"path": "financing.loans.1.rate", "value": 0.07}]},
+ {"id": "nogrant", "label": "无补助", "patch": "json", "path": "financing.grants", "value": []},
  {"id": "trough", "label": "价格低谷两年", "driver": "price", "mult": 0.9}]
 ```
 
@@ -235,6 +242,8 @@ use_of_funds, scenario_labels（传入 --assumptions 时）
 **建设期与可研口径的总投资**：有建设期（首年无收入）的项目，`derived` 会给出 `construction_years`、`construction_period_interest`（建设期利息，模型按费用处理、未资本化）、`initial_working_capital`（首个经营年的营运资金占用）和 `total_investment_feasibility = 建设投资 + 建设期利息 + 铺底流动资金`，以及 `funding_sources_total` 与分项。政府版第 12 章的“总投资与资金筹措”表直接用这些数（`make_tables.py` 的 T7），并说明口径差异：用户口中的“总投资 1.2 亿”通常只是建设投资，而融资总额还要覆盖建设期亏损和爬坡期营运资金，两者差多少、靠什么覆盖，要写清楚；脚本在差异超过 15% 时会警告。`use_of_funds` 合计与资金来源合计不一致时也会警告——资金用途表必须与融资方案对得上。
 
 **DSCR 的两个口径**：`summary.dscr_min` 是全部年份的最低值（建设期、宽限期 EBITDA 为负时会出现 −7 之类的数字，对读者无意义）；`derived.dscr_min_operating` 只看有还本的经营期年份。正文和核对脚本都用经营期口径，并写明“经营期（20XX–20XX 年）最低 DSCR”。
+
+**存量企业的口径**：期初有余额的企业，`derived.existing_business = true`：铺底流动资金取首年营运资金**增量**而非存量；"资金来源 vs 总投资"不再因差异告警（存量企业常用经营现金流自筹）；`use_of_funds` 超过外部资金的部分提示"需由自有经营现金流覆盖"；项目 IRR 置空（用有无对比的增量现金流）。银行版此时重点写 DSCR、增量 EBITDA 覆盖增量本息的倍数、有无项目对比。
 
 **流动比率的口径**：模型的流动比率 = 流动资产 ÷（应付账款 + 一年内到期借款），其中一年内到期借款取次年应还本金（资产负债表有备查行）。正文引用时写明口径；银行自己的口径可能还包含应付职工薪酬、应交税费等，差异在登记册说明。
 

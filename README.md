@@ -10,7 +10,7 @@
 <p align="center">
   <a href="#get-started-in-three-steps"><img alt="Claude skill" src="https://img.shields.io/badge/Claude-skill-2a78d6"></a>
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-1baf7a"></a>
-  <a href="CHANGELOG.md"><img alt="version" src="https://img.shields.io/badge/version-0.3.0-eb6834"></a>
+  <a href="CHANGELOG.md"><img alt="version" src="https://img.shields.io/badge/version-0.4.0-eb6834"></a>
   <img alt="languages" src="https://img.shields.io/badge/output-English%20%7C%20中文%20%7C%20bilingual-eda100">
 </p>
 
@@ -101,8 +101,9 @@ scripts/
   make_charts.py             chart PNGs (zh/en)
   build_docx.py              plan.md → formatted Word (cover, TOC, numbered headings, tables, figures, headers/footers)
   build_pptx.py              deck.md → PPT (fallback when no slide skill is available)
-  check_consistency.py       narrative figures vs model output (CNY 万元 and GBP/EUR/USD formats)
-assets/                  example assumptions file · 15-chapter skeleton · register and review-memo templates
+  check_consistency.py       narrative figures vs model output (CNY 万元 and GBP/EUR/USD formats; zh/en report)
+  model_i18n.py              English labels for the Excel model (--lang en)
+assets/                  example assumptions file · 15-chapter skeleton · register and review-memo templates (zh and en)
 evals/                   5 eval cases (prompt + graders)
 examples/                example model and layout sample (fictional)
 samples/                 complete outputs of full test runs
@@ -114,14 +115,16 @@ tests/smoke_test.sh      script smoke test (run in CI)
 
 ```bash
 mkdir -p work && cp assets/assumptions-example.json work/assumptions.json
-python scripts/build_financial_model.py work/assumptions.json -o work/model.xlsx
-python scripts/recalc_and_extract.py work/model.xlsx -o work/model_outputs.json --assumptions work/assumptions.json
+python scripts/build_financial_model.py work/assumptions.json -o work/model.xlsx --lang en
+python scripts/recalc_and_extract.py work/model.xlsx -o work/model_outputs.json --assumptions work/assumptions.json --lang en
 python scripts/run_sensitivity.py work/assumptions.json -o work/sensitivity_outputs.json --md work/sensitivity.md --chart work/charts/sensitivity.png --lang en
 python scripts/make_charts.py work/model_outputs.json -o work/charts --lang en
 python scripts/make_tables.py work/model_outputs.json -o work/tables.md --sensitivity work/sensitivity_outputs.json --lang en
 python scripts/build_docx.py work/plan.md -o work/plan.docx --title "Business Plan" --org "Company" --date "November 2026" --lang en
-python scripts/check_consistency.py work/plan.md work/model_outputs.json --extra work/sensitivity_outputs.json
+python scripts/check_consistency.py work/plan.md work/model_outputs.json --extra work/sensitivity_outputs.json --lang en
 ```
+
+For a Chinese engagement drop `--lang en`; the model unit comes from `meta.unit` in the assumptions file (`万元`, `£k`, `€k`, `$k` …).
 
 ## Modify and improve
 

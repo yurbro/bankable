@@ -1,15 +1,9 @@
-# 样件：杭州陶瓷膜案例（虚构）
+# 样件 / Samples
 
-这是 Bankable 第一次完整试跑的全部产出。输入只有一段公司简介（杭州一家做工业废水处理陶瓷膜组件的初创公司，成立一年半，6 人团队，两家化工园区客户试用，约 180 万元合同收入，想融 A 轮 2,000 万元），用户不在场回答问题。
+| 目录 | 案例 | 语言 / 货币 | 读者 |
+|---|---|---|---|
+| `hangzhou-ceramic-membrane-test-run/` | 杭州陶瓷膜工业废水初创公司 A 轮（虚构）：47 页计划书、993 公式模型、登记册、评审备忘 | 中文 / 万元 | 股权投资人 |
+| `uk-dairy-farm-bank-loan/` | North Yorkshire dairy farm expansion — bank loan + Defra grants (fictional) | English / £k | Bank |
+| `eu-rotterdam-rpet-series-a/` | Rotterdam textile-to-rPET start-up — Series A + EU/Dutch grant (fictional) | English / €k | Investors + grant evaluator |
 
-| 文件 | 说明 |
-|---|---|
-| `杭州陶瓷膜工业废水项目-商业计划书-2026-11.docx` | 47 页投资人版计划书（14 章 + 附录三表），保留 [A-xx] / [S-n] 标记供对照登记册 |
-| `杭州陶瓷膜工业废水项目-财务模型-2026-11.xlsx` | 三表模型，993 个公式带缓存值；假设表改情景选择单元格可重算 |
-| `杭州陶瓷膜工业废水项目-假设与证据登记-2026-11.md` | 17 条事实 / 31 条假设 / 8 条推断 / 9 条待补充 / 19 条来源 |
-| `杭州陶瓷膜工业废水项目-评审备忘-2026-11.md` | 四视角红队评审 18 条 |
-| `交付说明（最终回复）.md` | 交付时给用户的回复：需确认的假设、待补充项、模型结论、局限 |
-| `访谈问题（用户未回答）.md` | 本应先问的 8 个问题及缺答案时采用的默认值 |
-| `plan.md` / `assumptions.json` / `model_outputs.json` / `sensitivity_outputs.json` / `consistency_report.md` / `charts/` | 中间文件，可作为真实案例的假设文件写法参考 |
-
-公司、团队、客户、数字均为测试生成，行业数据查阅于 2026-11-01，未经核实；仅用于演示格式与方法。
+所有公司、团队、客户、数字均为测试生成，仅用于演示格式与方法。All companies and figures are fictional or test-generated; they demonstrate format and method only.

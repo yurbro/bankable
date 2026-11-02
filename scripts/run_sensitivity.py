@@ -15,6 +15,7 @@ run_sensitivity.py — 单因素敏感性分析：逐个改动关键假设，重
     {"id": "tax15",  "label": "所得税 15%", "patch": "json", "path": "tax.income_tax_rate", "value": 0.15}
     {"id": "rate+1", "label": "贷款利率 +100bp", "patch": "json", "path": "financing.loans.0.rate", "value": 0.055}   # 支持列表索引
     {"id": "nograce","label": "无宽限期", "patch": "json", "path": "financing.loans.0.grace_years", "value": 0}
+    {"id": "rates",  "label": "两笔贷款利率各 +100bp", "patch": "json", "patches": [{"path": "financing.loans.0.rate", "value": 0.065}, {"path": "financing.loans.1.rate", "value": 0.07}]}
 输出 JSON（基准 + 各案例的关键指标与相对基准的变化）、Markdown 表、龙卷风图（NPV 与最低期末现金）。
 正文引用这些数字时，把 sensitivity_outputs.json 作为 check_consistency.py 的 --extra 传入。
 """
@@ -87,7 +88,11 @@ def apply_case(a, case):
         wc = a.setdefault("working_capital", {})
         wc["ar_days"] = max(0.0, float(wc.get("ar_days", 0)) + float(case["delta"]))
     elif case.get("patch") == "json":
-        set_path(a, case["path"], case["value"])
+        if "patches" in case:  # 多处同时修改：[{"path": ..., "value": ...}, ...]
+            for pt in case["patches"]:
+                set_path(a, pt["path"], pt["value"])
+        else:
+            set_path(a, case["path"], case["value"])
     else:
         raise ValueError(f"无法识别的案例：{case}")
     return a, selector

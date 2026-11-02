@@ -111,7 +111,7 @@ def add_inline(paragraph, text, lang, size=None, color=None):
             set_run_font(run, f["body"], f["body_ascii"], size=size, italic=True, color=color)
         elif part.startswith("`") and part.endswith("`") and len(part) > 2:
             run = paragraph.add_run(part[1:-1])
-            set_run_font(run, "等线", "Consolas", size=size, color=color)
+            set_run_font(run, "等线" if lang == "zh" else "Consolas", "Consolas", size=size, color=color)
         else:
             run = paragraph.add_run(part)
             set_run_font(run, f["body"], f["body_ascii"], size=size, color=color)
@@ -207,7 +207,9 @@ def build_cover(doc, args, lang):
         r = p.add_run(T["confidential"])
         set_run_font(r, f["head"], f["head_ascii"], size=10, bold=True)
         p = doc.add_paragraph()
-        to = (args.to or "").replace("呈送：", "").replace("Prepared for: ", "").strip() or T["to_default"]
+        to = (args.to or "").replace("呈送：", "").replace("Prepared for: ", "").replace("Prepared for ", "").strip() or T["to_default"]
+        if len(to) > 60:
+            to = T["to_default"]
         r = p.add_run(T["conf_text"].format(org=args.org or ("本公司" if lang == "zh" else "the Company"), to=to))
         set_run_font(r, f["body"], f["body_ascii"], size=9, color="52514E")
         shade_paragraph(p)
@@ -291,12 +293,35 @@ def parse_table(lines):
     return rows
 
 
+def _text_len(t):
+    return sum(2 if ord(ch) > 0x2E80 else 1 for ch in re.sub(r"\*\*|`", "", t))
+
+
+def column_widths(rows, ncols, total_cm=16.0, min_cm=1.6):
+    """按各列内容长度（取 85 分位附近的最长值，开方压缩）分配列宽，避免文字列挤成一条。"""
+    import math
+    lens = []
+    for j in range(ncols):
+        col = sorted(_text_len(r[j]) if j < len(r) else 0 for r in rows)
+        idx = max(0, int(len(col) * 0.85) - 1)
+        lens.append(max(3, col[idx]))
+    weights = [math.sqrt(x) for x in lens]
+    widths = [max(min_cm, total_cm * w / sum(weights)) for w in weights]
+    scale = total_cm / sum(widths)
+    return [w * scale for w in widths]
+
+
 def add_table(doc, rows, lang, base_dir):
     f = FONTS[lang]
     ncols = max(len(r) for r in rows)
     table = doc.add_table(rows=len(rows), cols=ncols)
     table.style = "Table Grid"
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table.autofit = False
+    widths = column_widths(rows, ncols)
+    for j, w in enumerate(widths):
+        for i in range(len(rows)):
+            table.cell(i, j).width = Cm(w)
     set_cell_margins(table)
     for i, row in enumerate(rows):
         for j in range(ncols):
@@ -332,7 +357,7 @@ def add_image(doc, caption, path, lang, base_dir):
     full = path if os.path.isabs(path) else os.path.join(base_dir, path)
     if not os.path.exists(full):
         p = doc.add_paragraph()
-        add_inline(p, f"[图片缺失：{path}]", lang, color="C00000")
+        add_inline(p, (f"[图片缺失：{path}]" if lang == "zh" else f"[missing image: {path}]"), lang, color="C00000")
         return
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER

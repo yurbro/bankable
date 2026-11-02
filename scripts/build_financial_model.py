@@ -3,7 +3,8 @@
 build_financial_model.py — 从 assumptions.json 生成带公式的 Excel 三表财务模型。
 
 用法:
-    python build_financial_model.py assumptions.json -o 模型.xlsx
+    python build_financial_model.py assumptions.json -o 模型.xlsx [--lang en]
+    --lang en：工作表名与所有固定标签为英文（用户在假设文件里写的名称、来源保持原样），公式引用自动改写。
 
 生成的工作簿（全部公式可追溯，蓝色字=输入，黑色=公式）:
     说明 | 假设 | 收入 | 费用 | 投资与折旧 | 融资 | 利润表 | 现金流量表 | 资产负债表 | 指标 | 情景对比 | 月度现金流(第N年) | 来源日志 | _map(隐藏)
@@ -13,8 +14,11 @@ _map 工作表记录每个关键行的位置，供 recalc_and_extract.py 读取�
 """
 import argparse
 import json
+import os
 import sys
 from datetime import date
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -51,7 +55,18 @@ CATEGORY_ALIASES = {
     "研发": "研发费用", "研发费用": "研发费用", "技术": "研发费用",
     "其他": "其他费用", "其他费用": "其他费用",
     "营业成本": "营业成本", "生产": "营业成本", "成本": "营业成本",
+    # English aliases (case-insensitive lookup below)
+    "selling": "销售费用", "sales": "销售费用", "marketing": "销售费用", "sales & marketing": "销售费用", "s&m": "销售费用", "commercial": "销售费用",
+    "g&a": "管理费用", "ga": "管理费用", "admin": "管理费用", "administration": "管理费用", "general": "管理费用", "management": "管理费用", "overheads": "管理费用", "overhead": "管理费用",
+    "r&d": "研发费用", "rd": "研发费用", "research": "研发费用", "development": "研发费用", "technology": "研发费用",
+    "other": "其他费用", "other opex": "其他费用", "operations": "其他费用",
+    "cogs": "营业成本", "cost of sales": "营业成本", "production": "营业成本", "direct": "营业成本", "direct labour": "营业成本", "direct labor": "营业成本",
 }
+
+
+def category_of(value):
+    key = str(value).strip()
+    return CATEGORY_ALIASES.get(key) or CATEGORY_ALIASES.get(key.lower())
 
 
 class ModelError(Exception):
@@ -147,9 +162,9 @@ def validate(a):
         p = f"opex_lines[{i}]"
         if not o.get("name"):
             _err(errors, p + ".name", "缺少名称")
-        cat = CATEGORY_ALIASES.get(str(o.get("category", "管理费用")), None)
+        cat = category_of(o.get("category", "管理费用"))
         if cat is None or cat == "营业成本":
-            _err(errors, p + ".category", f"费用类别应为 {OPEX_CATEGORIES} 之一")
+            _err(errors, p + ".category", f"费用类别应为 {OPEX_CATEGORIES} 之一（或英文 selling / g&a / r&d / other）")
             cat = "管理费用"
         o["_category"] = cat
         vals = o.get("values")
@@ -168,9 +183,9 @@ def validate(a):
         h["_count"] = expand_growth(cnt, n, p + ".count", errors)
         if not _num(h.get("annual_cost")):
             _err(errors, p + ".annual_cost", "人均年成本必须是数字（单位与 meta.unit 一致）")
-        cat = CATEGORY_ALIASES.get(str(h.get("category", "管理费用")), None)
+        cat = category_of(h.get("category", "管理费用"))
         if cat is None:
-            _err(errors, p + ".category", f"类别应为 {OPEX_CATEGORIES + ['营业成本']} 之一")
+            _err(errors, p + ".category", f"类别应为 {OPEX_CATEGORIES + ['营业成本']} 之一（或英文 selling / g&a / r&d / other / cogs）")
             cat = "管理费用"
         h["_category"] = cat
 
@@ -221,8 +236,8 @@ def validate(a):
         if sch is not None:
             if not (isinstance(sch, list) and len(sch) == n and all(_num(x) for x in sch)):
                 _err(errors, p + ".schedule", f"还本计划应为长度 {n} 的数组（各预测年偿还本金；到期一次还本则只在最后一年填金额）")
-            elif _num(l.get("amount")) and abs(sum(sch) - float(l["amount"])) > 0.5:
-                _err(errors, p + ".schedule", f"还本计划合计 {sum(sch):,.1f} ≠ 贷款金额 {l['amount']:,.1f}")
+            elif _num(l.get("amount")) and sum(sch) - float(l["amount"]) > 0.5:
+                _err(errors, p + ".schedule", f"还本计划合计 {sum(sch):,.1f} 超过贷款金额 {l['amount']:,.1f}（期限超出预测期时合计可小于贷款金额，余额留在期末）")
         dd = l.get("drawdown")
         if dd is not None:
             if not (isinstance(dd, list) and len(dd) == n and all(_num(x) for x in dd)):
@@ -234,6 +249,8 @@ def validate(a):
     payout = fin.get("dividend_payout", 0)
     if not _num(payout) or payout < 0 or payout > 1:
         _err(errors, "financing.dividend_payout", "分红比例应在 0–1 之间")
+    if fin.get("fixed_distributions") is not None:
+        fin["_fixed_distributions"] = expand_growth(fin["fixed_distributions"], n, "financing.fixed_distributions", errors)
 
     tax = a.get("tax", {}) or {}
     if "income_tax_rate" in tax and not (_num(tax["income_tax_rate"]) and 0 <= tax["income_tax_rate"] < 1):
@@ -267,9 +284,9 @@ def validate(a):
         if sch is not None:
             if not (isinstance(sch, list) and len(sch) == n and all(_num(x) for x in sch)):
                 _err(errors, "opening_balance.loan_schedule", f"存量借款还本计划应为长度 {n} 的数组")
-            elif abs(sum(sch) - float(ob.get("loans", 0) or 0)) > 0.5:
-                _err(errors, "opening_balance.loan_schedule", f"还本计划合计 {sum(sch):,.1f} ≠ 存量借款余额 {float(ob.get('loans', 0) or 0):,.1f}")
-        assets = sum(float(ob.get(k, 0) or 0) for k in ("cash", "accounts_receivable", "inventory", "other_current_assets", "fixed_assets_net"))
+            elif sum(sch) - float(ob.get("loans", 0) or 0) > 0.5:
+                _err(errors, "opening_balance.loan_schedule", f"还本计划合计 {sum(sch):,.1f} 超过存量借款余额 {float(ob.get('loans', 0) or 0):,.1f}")
+        assets = sum(float(ob.get(k, 0) or 0) for k in ("cash", "accounts_receivable", "inventory", "other_current_assets", "fixed_assets_net", "land"))
         liab_eq = sum(float(ob.get(k, 0) or 0) for k in ("accounts_payable", "loans", "paid_in_capital", "capital_reserve", "retained_earnings"))
         if abs(assets - liab_eq) > 0.5:
             _err(errors, "opening_balance", f"期初资产负债表不平：资产 {assets:,.1f} ≠ 负债+权益 {liab_eq:,.1f}；可调整 retained_earnings 使其相等")
@@ -424,7 +441,7 @@ class Sheet:
 # ----------------------------------------------------------------------------
 # 构建
 # ----------------------------------------------------------------------------
-def build(a, out_path):
+def build(a, out_path, lang="zh"):
     n = validate(a)
     meta = a["meta"]
     unit = meta.get("unit", "万元")
@@ -632,6 +649,10 @@ def build(a, out_path):
             rr = S.row(f"   {l.get('name', '借款')} — 还本计划（按年）", [float(x) for x in l["schedule"]], unit=unit, fmt=MONEY, kind="input")
             loan_refs[-1]["schedule"] = [f"'假设'!${cols[i]}${rr}" for i in range(n)]
     payout_ref = S.scalar("分红比例（占正净利润）", float(fin.get("dividend_payout", 0.0)), fmt=PCT, unit="%")
+    if fin.get("_fixed_distributions"):
+        fixed_dist_refs = write_series_input(S, "固定分配 / 合伙人提款（按年）", fin["_fixed_distributions"], unit=unit, fmt=MONEY)
+    else:
+        fixed_dist_refs = None
     S.blank()
 
     S.section("税务与估值假设")
@@ -653,7 +674,7 @@ def build(a, out_path):
     ob_ref = {}
     for key, label in [
         ("cash", "货币资金"), ("accounts_receivable", "应收账款"), ("inventory", "存货"), ("other_current_assets", "其他流动资产"),
-        ("fixed_assets_net", "固定资产净值"), ("fixed_assets_remaining_life", "固定资产剩余折旧年限"),
+        ("fixed_assets_net", "固定资产净值"), ("fixed_assets_remaining_life", "固定资产剩余折旧年限"), ("land", "土地 / 不折旧资产"),
         ("accounts_payable", "应付账款"), ("loans", "借款余额"), ("loan_rate", "存量借款年利率"), ("loan_remaining_years", "存量借款剩余年限"),
         ("paid_in_capital", "实收资本"), ("capital_reserve", "资本公积（含历史补助）"), ("retained_earnings", "未分配利润"),
     ]:
@@ -871,7 +892,7 @@ def build(a, out_path):
     p_tax = P.row("所得税", [f"={cols[i]}{p_taxable}*{tax_ref}" for i in range(n)], unit=unit, key="tax")
     p_ni = P.row("净利润", [f"={cols[i]}{p_ebt}-{cols[i]}{p_tax}" for i in range(n)], unit=unit, total=True, key="net_income")
     P.row("净利率", [f"=IF({cols[i]}{p_rev}=0,0,{cols[i]}{p_ni}/{cols[i]}{p_rev})" for i in range(n)], unit="%", fmt=PCT, key="net_margin")
-    p_div = P.row("分红", [f"=MAX(0,{cols[i]}{p_ni})*{payout_ref}" for i in range(n)], unit=unit, key="dividends")
+    p_div = P.row("分红 / 分配", [f"=MAX(0,{cols[i]}{p_ni})*{payout_ref}" + (f"+{fixed_dist_refs[i]}" if fixed_dist_refs else "") for i in range(n)], unit=unit, key="dividends")
     p_ret = P.row("留存收益增加", [f"={cols[i]}{p_ni}-{cols[i]}{p_div}" for i in range(n)], unit=unit, key="retained_addition")
     P.row("累计净利润", [f"=SUM(${first}{p_ni}:{cols[i]}{p_ni})" for i in range(n)], unit=unit, key="cumulative_net_income")
     yr["ni"] = lambda i: f"'利润表'!{cols[i]}{p_ni}"
@@ -894,7 +915,8 @@ def build(a, out_path):
     b_ca = B.row("流动资产合计", [f"={cols[i]}{b_cash_r}+{cols[i]}{b_ar}+{cols[i]}{b_inv}+{cols[i]}{b_oca}" for i in range(n)], unit=unit, total=True, key="current_assets")
     b_fa = B.row("固定资产净值", [f"={yr['fa'](i)}" for i in range(n)], unit=unit, key="bs_fixed_assets")
     b_cip = B.row("在建工程", [f"={yr['cip'](i)}" for i in range(n)], unit=unit, key="bs_construction_in_progress")
-    b_ta = B.row("资产总计", [f"={cols[i]}{b_ca}+{cols[i]}{b_fa}+{cols[i]}{b_cip}" for i in range(n)], unit=unit, total=True, key="total_assets")
+    b_land = B.row("土地 / 不折旧资产", [f"={ob_ref['land']}" for i in range(n)], unit=unit, key="land")
+    b_ta = B.row("资产总计", [f"={cols[i]}{b_ca}+{cols[i]}{b_fa}+{cols[i]}{b_cip}+{cols[i]}{b_land}" for i in range(n)], unit=unit, total=True, key="total_assets")
     B.blank()
     B.section("负债")
     b_ap = B.row("应付账款", [f"=({yr['cogs'](i)}+{yr['opex'](i)})*{ap_days}/365" for i in range(n)], unit=unit, key="accounts_payable")
@@ -1206,6 +1228,11 @@ def build(a, out_path):
         ws.column_dimensions[col].width = w
 
     bk.write_map()
+    if lang == "en":
+        from model_i18n import localize_workbook
+        leftover = localize_workbook(bk.wb, unit=unit)
+        if leftover:
+            print(f"[提示] 英文模型中仍有 {leftover} 个含中文的单元格（通常是假设文件里用户自己写的名称或来源说明）")
     bk.wb.calculation.fullCalcOnLoad = True
     bk.wb.save(out_path)
     return out_path
@@ -1233,11 +1260,12 @@ def main():
     ap = argparse.ArgumentParser(description="从 assumptions.json 生成 Excel 三表财务模型")
     ap.add_argument("assumptions")
     ap.add_argument("-o", "--output", default="财务模型.xlsx")
+    ap.add_argument("--lang", default="zh", choices=["zh", "en"], help="工作表与标签语言（en = 英文模型，用户内容保持原样）")
     args = ap.parse_args()
     with open(args.assumptions, encoding="utf-8") as f:
         a = json.load(f)
     try:
-        out = build(a, args.output)
+        out = build(a, args.output, lang=args.lang)
     except ModelError as e:
         print("[错误] " + str(e), file=sys.stderr)
         sys.exit(1)

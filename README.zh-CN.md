@@ -10,7 +10,7 @@
 <p align="center">
   <a href="#三步上手"><img alt="Claude skill" src="https://img.shields.io/badge/Claude-skill-2a78d6"></a>
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-1baf7a"></a>
-  <a href="CHANGELOG.md"><img alt="version" src="https://img.shields.io/badge/version-0.3.0-eb6834"></a>
+  <a href="CHANGELOG.md"><img alt="version" src="https://img.shields.io/badge/version-0.4.0-eb6834"></a>
   <img alt="language" src="https://img.shields.io/badge/%E8%AF%AD%E8%A8%80-%E4%B8%AD%E6%96%87%20%2F%20EN-eda100">
 </p>
 
@@ -69,7 +69,7 @@ Claude 会先问最多 8 个关键问题（你不在也会按稳妥假设推进�
 
 <p align="center"><img src="docs/images/outputs.png" alt="交付物" width="100%"></p>
 
-完整样件在 [`samples/`](samples/)：虚构的杭州陶瓷膜案例（中文，投资人版，47 页），以及英欧案例（英国奶牛场银行贷款 + Defra 补助、荷兰纺织再生 PET 初创 A 轮 + 欧盟补助，英文、£/€）。
+完整样件在 [`samples/`](samples/)：虚构的杭州陶瓷膜案例（中文，投资人版，47 页），以及两个英欧案例（英国北约克郡奶牛场银行贷款 + Defra 补助，44 页、£k；鹿特丹纺织再生 PET 初创 A 轮 + 欧盟补助，50 页 + 12 页 deck、€k）。整套脚本加 `--lang en` 即可输出英文模型、表格、图表与 Word。
 
 ## 和"让 AI 写个 BP"的区别
 
@@ -98,7 +98,8 @@ scripts/
   make_charts.py             财务图表 PNG（中/英）
   build_docx.py              plan.md → 排版好的 Word（封面、目录、编号标题、表格、图、页眉页脚）
   build_pptx.py              deck.md → PPT（没有 pptx skill 时的备选）
-  check_consistency.py       正文数字 vs 模型输出
+  check_consistency.py       正文数字 vs 模型输出（中/英报告，识别 万元 与 £/€/$ 写法）
+  model_i18n.py              模型英文化词典（--lang en）
 assets/                  假设文件示例 · 15 章写作骨架 · 登记册与评审备忘模板
 evals/                   5 个测试用例：投资人版 / 银行 + 存量业务 / 政府 + 董事会双语 + PPT / 英国奶牛场贷款（£）/ 荷兰初创 A 轮 + 欧盟补助（€）
 examples/                虚构案例的 Excel 模型与 Word 排版样例

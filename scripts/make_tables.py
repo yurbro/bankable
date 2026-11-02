@@ -113,6 +113,9 @@ def series_table(T, F, title_key, keys, s, years, bold=()):
     for k in keys:
         if k not in s:
             continue
+        vals = s[k]
+        if all((v is None or v == 0) for v in vals) and k not in ("revenue", "net_income", "closing_cash", "total_assets", "total_liabilities_equity"):
+            continue  # 全零行（如无研发费用）不打印
         name = T.get(k, k)
         if k in bold:
             name = f"**{name}**"
@@ -126,8 +129,13 @@ def main():
     ap.add_argument("-o", "--output", default="tables.md")
     ap.add_argument("--sensitivity", default=None)
     ap.add_argument("--lang", default="zh", choices=["zh", "en"])
-    ap.add_argument("--unit", default=None, help="输出单位：万元（默认）/ 亿元 / million（RMB million，英文版常用）")
+    ap.add_argument("--unit", default=None, help="输出单位：万元（默认）/ 亿元 / million（RMB million，英文版常用）；其他单位（£k、€k）原样传递")
+    ap.add_argument("--category-labels", default=None, help="四类费用的显示名，逗号分隔，如 'Selling,Overheads,R&D,Other'（英国企业常用 Overheads 而非 G&A）")
     args = ap.parse_args()
+    if args.category_labels:
+        names = [x.strip() for x in args.category_labels.split(",")]
+        for k, nm in zip(["opex_销售费用", "opex_管理费用", "opex_研发费用", "opex_其他费用"], names):
+            L[args.lang][k] = nm
     with open(args.outputs, encoding="utf-8") as f:
         o = json.load(f)
     T = L[args.lang]
@@ -145,9 +153,18 @@ def main():
         [T["s_rev_last"], F.money(s["revenue"][-1])], [T["s_cagr"] + ("" if sm.get("revenue_cagr") is not None else (f"（自 {d.get('first_operating_year')} 年起）" if args.lang == "zh" else f" (from {d.get('first_operating_year')})")), F.pct(sm.get("revenue_cagr") if sm.get("revenue_cagr") is not None else d.get("revenue_cagr_operating"))], [T["s_gm_last"], F.pct(s["gross_margin"][-1])],
         [T["s_ni_last"], F.money(s["net_income"][-1])], [T["s_cum_ni"], F.money(sm.get("total_net_income"))], [T["s_first_profit"], d.get("first_profit_year") or "—"],
         [T["s_min_cash"], F.money(sm.get("min_cash_balance"))], [T["s_gap"], F.money(sm.get("funding_gap"))], [T["s_peak"], F.money(d.get("peak_funding_need"))],
-        [T["s_dscr"], F.ratio(d.get("dscr_min_operating"))], [T["s_irr"], F.pct(irr) if irr is not None else "—"], [T["s_irr_notv"], F.pct(sm.get("irr_no_tv")) if sm.get("irr_no_tv") is not None else "—"],
-        [T["s_npv"], F.money(sm.get("npv"))], [T["s_payback"], d.get("payback_years_ufcf") if d.get("payback_years_ufcf") is not None else ("—" if args.lang == "en" else "超出预测期")],
     ]
+    if d.get("dscr_min_operating") is not None:
+        rows.append([T["s_dscr"], F.ratio(d.get("dscr_min_operating"))])
+    if irr is not None:  # 存量业务无前期净投入时 IRR 为空，不打印
+        rows.append([T["s_irr"], F.pct(irr)])
+        if sm.get("irr_no_tv") is not None:
+            rows.append([T["s_irr_notv"], F.pct(sm.get("irr_no_tv"))])
+    rows.append([T["s_npv"], F.money(sm.get("npv"))])
+    if d.get("payback_years_ufcf") is not None:
+        rows.append([T["s_payback"], d.get("payback_years_ufcf")])
+    elif irr is not None:
+        rows.append([T["s_payback"], "—" if args.lang == "en" else "超出预测期"])
     parts.append(table(T["t1"].format(u=F.unit_label), [T["metric"], T["base"]], rows))
 
     parts.append(series_table(T, F, "t2", ["revenue", "revenue_growth", "cogs", "gross_profit", "gross_margin", "opex_销售费用", "opex_管理费用", "opex_研发费用", "opex_其他费用", "ebitda", "ebitda_margin", "depreciation", "ebit", "interest", "ebt", "tax", "net_income", "net_margin"], s, years, bold=("gross_profit", "ebitda", "net_income")))
@@ -171,15 +188,16 @@ def main():
         [T["s_min_cash"]] + [F.money(g(c, ["summary", "min_cash_balance"])) for c in codes],
         [T["s_gap"]] + [F.money(g(c, ["summary", "funding_gap"])) for c in codes],
         [T["s_dscr"]] + [F.ratio(g(c, ["derived", "dscr_min_operating"])) for c in codes],
-        [T["s_irr"]] + [(F.pct(g(c, ["summary", "irr_with_tv"])) if g(c, ["summary", "irr_with_tv"]) is not None else "—") for c in codes],
         [T["s_npv"]] + [F.money(g(c, ["summary", "npv"])) for c in codes],
     ]
+    if any(g(c, ["summary", "irr_with_tv"]) is not None for c in codes):
+        rows.insert(-1, [T["s_irr"]] + [(F.pct(g(c, ["summary", "irr_with_tv"])) if g(c, ["summary", "irr_with_tv"]) is not None else "—") for c in codes])
     parts.append(table(T["t6"].format(u=F.unit_label), [T["metric"]] + [T[c] for c in codes], rows))
 
     # T7 funding vs total investment
     fs = d.get("funding_sources") or {}
     rows = [
-        [T["f_capex"], F.money(d.get("total_capex"))], [T["f_int"], F.money(d.get("construction_period_interest"))], [T["f_wc"], F.money(d.get("initial_working_capital"))],
+        [T["f_capex"], F.money(d.get("total_capex"))], [T["f_int"], F.money(d.get("construction_period_interest"))], [T["f_wc"] + ((" — 增量" if args.lang == "zh" else " — incremental") if d.get("existing_business") else ""), F.money(d.get("initial_working_capital"))],
         [f"**{T['f_total']}**", f"**{F.money(d.get('total_investment_feasibility'))}**"],
         [T["f_equity"], F.money(fs.get("equity"))], [T["f_grant"], F.money(fs.get("grants"))], [T["f_loan"], F.money(fs.get("loans"))],
         [f"**{T['f_sources']}**", f"**{F.money(d.get('funding_sources_total'))}**"],

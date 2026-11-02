@@ -21,6 +21,8 @@ from datetime import date
 import openpyxl
 from openpyxl.styles import Alignment, Font, PatternFill
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 SCENARIOS = [(1, "base", "基准"), (2, "downside", "下行"), (3, "upside", "上行")]
 SERIES_KEYS = [
     "revenue", "cogs", "gross_profit", "gross_margin", "revenue_growth", "opex_total",
@@ -82,7 +84,7 @@ def read_values(path, recs):
         ws = wb[rec["sheet"]]
         vals = [ws.cell(row=rec["row"], column=rec["col"] + i).value for i in range(rec["n"])]
         out[key] = vals[0] if rec["n"] == 1 else vals
-    years_ws = wb["利润表"]
+    years_ws = wb[recs["is_revenue"]["sheet"]]
     out["_years"] = [years_ws.cell(row=3, column=3 + i).value for i in range(recs["revenue"]["n"])]
     return out
 
@@ -152,13 +154,19 @@ def derive(vals, years, min_cash):
     ar = clean_series(vals.get("accounts_receivable", [])); inv = clean_series(vals.get("inventory", []))
     oca = clean_series(vals.get("other_current_assets", [])); ap = clean_series(vals.get("accounts_payable", []))
     fi = first_rev_idx or 0
-    initial_wc = ((ar[fi] or 0) + (inv[fi] or 0) + (oca[fi] or 0) - (ap[fi] or 0)) if fi < len(ar) else 0.0
+    existing = bool(opening)  # 期初有现金 → 存量业务：铺底流动资金取首年营运资金增量而不是全部存量
+    if existing:
+        ob_wc = (num(vals.get("ob_accounts_receivable")) or 0) + (num(vals.get("ob_inventory")) or 0) + (num(vals.get("ob_other_current_assets")) or 0) - (num(vals.get("ob_accounts_payable")) or 0)
+        initial_wc = max(0.0, ((ar[fi] or 0) + (inv[fi] or 0) + (oca[fi] or 0) - (ap[fi] or 0)) - ob_wc) if fi < len(ar) else 0.0
+    else:
+        initial_wc = ((ar[fi] or 0) + (inv[fi] or 0) + (oca[fi] or 0) - (ap[fi] or 0)) if fi < len(ar) else 0.0
     first_oper_year = years[first_rev_idx] if first_rev_idx is not None else None
     cagr_oper = None
     if first_rev_idx is not None and rev[first_rev_idx] and n - 1 - first_rev_idx >= 1 and rev[-1] and rev[-1] > 0:
         cagr_oper = round((rev[-1] / rev[first_rev_idx]) ** (1 / (n - 1 - first_rev_idx)) - 1, 4)
     eq_in = sum(x or 0 for x in clean_series(vals.get("equity_in", []))); gr_in = sum(x or 0 for x in clean_series(vals.get("grant_in", []))); ln_in = sum(x or 0 for x in clean_series(vals.get("loan_drawdown", [])))
     return {
+        "existing_business": existing,
         "first_operating_year": first_oper_year,
         "revenue_cagr_operating": cagr_oper,
         "dscr_operating_by_year": dscr_oper,
@@ -184,11 +192,18 @@ def derive(vals, years, min_cash):
     }
 
 
-def fmt_money(v, unit):
+def fmt_money(v, unit, lang="zh"):
     if v is None:
         return None
     if abs(v) >= 100000 and unit == "万元":
         return f"{v / 10000:,.2f} 亿元"
+    sym = unit[0] if unit and unit[0] in "£€$" else None
+    if sym and unit[1:].lower() in ("k", "000", "k "):  # £k / €k / $k
+        if abs(v) >= 1000:
+            return f"{'-' if v < 0 else ''}{sym}{abs(v) / 1000:,.2f}m"
+        return f"{'-' if v < 0 else ''}{sym}{abs(v):,.0f}k"
+    if lang == "en" and unit == "万元":
+        return f"RMB {v / 100:,.2f} million" if abs(v) >= 100 else f"RMB {v:,.1f} ×10k"
     return f"{v:,.1f} {unit}"
 
 
@@ -196,7 +211,11 @@ def fmt_pct(v):
     return None if v is None else f"{v * 100:.1f}%"
 
 
+LANG = "zh"
+
+
 def build_outputs(results, recs, unit, assumptions, model_path):
+    lang = LANG
     base = results["base"]
     years = base["_years"]
     min_cash = num(base.get("min_cash")) or 0.0
@@ -211,7 +230,8 @@ def build_outputs(results, recs, unit, assumptions, model_path):
         "checks": {},
         "narrative_numbers": {},
     }
-    for code, label in [("base", "基准"), ("downside", "下行"), ("upside", "上行")]:
+    scen_labels = {"base": "基准", "downside": "下行", "upside": "上行"} if lang == "zh" else {"base": "Base", "downside": "Downside", "upside": "Upside"}
+    for code, label in scen_labels.items():
         if code not in results:
             continue
         vals = results[code]
@@ -227,12 +247,13 @@ def build_outputs(results, recs, unit, assumptions, model_path):
         first_nonzero = next((x for x in ufcf if x is not None and abs(x) > 1e-9), None)
         irr_note = None
         if first_nonzero is not None and first_nonzero > 0:
-            irr_note = "现金流无前期净投入（存量业务或投资被经营现金流覆盖），项目 IRR 无意义；请用有无对比的增量现金流或 NPV/回收期表述"
+            irr_note = ("现金流无前期净投入（存量业务或投资被经营现金流覆盖），项目 IRR 无意义；请用有无对比的增量现金流或 NPV/回收期表述" if lang == "zh"
+                        else "No upfront net investment in the cash flows (existing business, or capex covered by operating cash flow): a project IRR is meaningless — use incremental with/without cash flows, NPV or payback instead")
         for k in ("irr_with_tv", "irr_no_tv", "equity_irr"):
             v = scalars.get(k)
             if v is not None and (irr_note or v > 3.0):
                 scalars[k] = None
-                irr_note = irr_note or f"{k} 计算值 {v:.0%} 超出合理范围，已置空"
+                irr_note = irr_note or (f"{k} 计算值 {v:.0%} 超出合理范围，已置空" if lang == "zh" else f"{k} of {v:.0%} is outside a plausible range and was blanked")
         scalars["irr_note"] = irr_note
         derived = derive(vals, years, min_cash)
         out["scenarios"][code] = {"label": label, "series": series, "summary": scalars, "derived": derived}
@@ -252,7 +273,8 @@ def build_outputs(results, recs, unit, assumptions, model_path):
                 "payment_lag_months": num(vals.get("monthly_payment_lag")),
                 "annual_year1_closing_cash": annual_y1,
                 "difference_vs_annual": diff,
-                "explanation": "月度表按整月收付款滞后分摊且不含存货占用，年度表按周转天数计算年末应收/应付/存货，所以 12 月末现金与年度表期末现金不同；月度表用于判断现金节奏与最低点，正式口径以年度表为准。",
+                "explanation": ("月度表按整月收付款滞后分摊且不含存货占用，年度表按周转天数计算年末应收/应付/存货，所以 12 月末现金与年度表期末现金不同；月度表用于判断现金节奏与最低点，正式口径以年度表为准。" if lang == "zh"
+                                else "The monthly sheet spreads cash with whole-month collection/payment lags and no inventory build, while the annual statements derive year-end receivables/payables/inventory from turnover days, so December cash differs from the annual closing cash; use the monthly sheet for rhythm and the low point, the annual statements as the formal basis."),
             }
     b = out["scenarios"]["base"]
     bc = clean_series(base.get("balance_check", []))
@@ -291,12 +313,15 @@ def build_outputs(results, recs, unit, assumptions, model_path):
     if b["derived"]["construction_years"]:
         w.append(f"建设期 {b['derived']['construction_years']} 无收入：正文用经营期 DSCR（dscr_min_operating）而不是含建设期的最低值；可研口径总投资 = 建设投资 {b['derived']['total_capex']:,.1f} + 建设期利息 {b['derived']['construction_period_interest']:,.1f} + 铺底流动资金 {b['derived']['initial_working_capital']:,.1f} = {b['derived']['total_investment_feasibility']:,.1f}（模型未将建设期利息资本化，正文需说明口径）")
     fs, ti = b["derived"]["funding_sources_total"], b["derived"]["total_investment_feasibility"]
-    if ti and fs and abs(fs - ti) / ti > 0.15:
+    existing = b["derived"].get("existing_business")
+    if ti and fs and abs(fs - ti) / ti > 0.15 and not existing:
         w.append(f"资金来源合计 {fs:,.1f} 与可研口径总投资 {ti:,.1f} 相差超过 15%，请在融资章节解释差额（营运资金储备、建设期亏损、分期融资等）")
     if assumptions and (assumptions.get("financing", {}) or {}).get("use_of_funds"):
         uof_total = sum(float(u.get("amount", 0) or 0) for u in assumptions["financing"]["use_of_funds"])
-        if fs and abs(uof_total - fs) / fs > 0.01:
-            w.append(f"use_of_funds 合计 {uof_total:,.1f} ≠ 资金来源合计 {fs:,.1f}（股权 + 补助 + 借款），资金用途表与融资方案不一致")
+        if fs and uof_total - fs > 0.01 * fs and not existing:
+            w.append(f"use_of_funds 合计 {uof_total:,.1f} 超过外部资金来源合计 {fs:,.1f}（股权 + 补助 + 借款），资金用途表与融资方案不一致")
+        elif fs and uof_total - fs > 0.01 * fs and existing:
+            w.append(f"use_of_funds 合计 {uof_total:,.1f} 超过外部资金来源 {fs:,.1f}，差额 {uof_total - fs:,.1f} 需由自有经营现金流覆盖——请在融资章节写明")
     gmr = b["derived"]["gross_margin_range"]
     if gmr and (gmr[0] < 0.05 or gmr[1] > 0.85):
         w.append(f"毛利率区间 {gmr} 偏离常见范围，请核对单价/成本假设")
@@ -315,24 +340,24 @@ def build_outputs(results, recs, unit, assumptions, model_path):
     d = b["derived"]
     nn = {
         "years": years,
-        "revenue_by_year": [fmt_money(v, unit) for v in s["revenue"]],
-        "net_income_by_year": [fmt_money(v, unit) for v in s["net_income"]],
-        "ebitda_by_year": [fmt_money(v, unit) for v in s["ebitda"]],
-        "closing_cash_by_year": [fmt_money(v, unit) for v in s["closing_cash"]],
+        "revenue_by_year": [fmt_money(v, unit, lang) for v in s["revenue"]],
+        "net_income_by_year": [fmt_money(v, unit, lang) for v in s["net_income"]],
+        "ebitda_by_year": [fmt_money(v, unit, lang) for v in s["ebitda"]],
+        "closing_cash_by_year": [fmt_money(v, unit, lang) for v in s["closing_cash"]],
         "gross_margin_by_year": [fmt_pct(v) for v in s["gross_margin"]],
         "net_margin_by_year": [fmt_pct(v) for v in s["net_margin"]],
         "revenue_cagr": fmt_pct(sm.get("revenue_cagr")),
         "revenue_cagr_operating": fmt_pct(d.get("revenue_cagr_operating")),
-        "revenue_cagr_note": (f"首年无收入，CAGR 以首个经营年 {d.get('first_operating_year')} 起算" if d.get("construction_years") else None),
-        "total_capex": fmt_money(sm.get("total_capex"), unit),
-        "total_equity_in": fmt_money(sm.get("total_equity_in"), unit),
-        "total_loan_drawdown": fmt_money(sm.get("total_loan_drawdown"), unit),
-        "total_grant_in": fmt_money(sm.get("total_grant_in"), unit),
+        "revenue_cagr_note": ((f"首年无收入，CAGR 以首个经营年 {d.get('first_operating_year')} 起算" if lang == "zh" else f"No revenue in year 1; CAGR is measured from the first operating year {d.get('first_operating_year')}") if d.get("construction_years") else None),
+        "total_capex": fmt_money(sm.get("total_capex"), unit, lang),
+        "total_equity_in": fmt_money(sm.get("total_equity_in"), unit, lang),
+        "total_loan_drawdown": fmt_money(sm.get("total_loan_drawdown"), unit, lang),
+        "total_grant_in": fmt_money(sm.get("total_grant_in"), unit, lang),
         "external_funding_total": fmt_money((sm.get("total_equity_in") or 0) + (sm.get("total_loan_drawdown") or 0) + (sm.get("total_grant_in") or 0), unit),
-        "peak_funding_need": fmt_money(d["peak_funding_need"], unit),
-        "min_cash_balance": fmt_money(sm.get("min_cash_balance"), unit),
+        "peak_funding_need": fmt_money(d["peak_funding_need"], unit, lang),
+        "min_cash_balance": fmt_money(sm.get("min_cash_balance"), unit, lang),
         "min_cash_year": sm.get("min_cash_year"),
-        "funding_gap": fmt_money(sm.get("funding_gap"), unit),
+        "funding_gap": fmt_money(sm.get("funding_gap"), unit, lang),
         "first_profit_year": d["first_profit_year"],
         "first_positive_cfo_year": d["first_positive_cfo_year"],
         "payback_years_ufcf": d["payback_years_ufcf"],
@@ -340,24 +365,24 @@ def build_outputs(results, recs, unit, assumptions, model_path):
         "irr_with_tv": fmt_pct(sm.get("irr_with_tv")),
         "irr_no_tv": fmt_pct(sm.get("irr_no_tv")),
         "equity_irr": fmt_pct(sm.get("equity_irr")),
-        "npv": fmt_money(sm.get("npv"), unit),
+        "npv": fmt_money(sm.get("npv"), unit, lang),
         "dscr_min": None if sm.get("dscr_min") is None else f"{sm['dscr_min']:.2f}",
         "dscr_min_operating": None if d.get("dscr_min_operating") is None else f"{d['dscr_min_operating']:.2f}",
         "construction_years": d.get("construction_years"),
-        "construction_period_interest": fmt_money(d.get("construction_period_interest"), unit),
-        "initial_working_capital": fmt_money(d.get("initial_working_capital"), unit),
-        "total_investment_feasibility": fmt_money(d.get("total_investment_feasibility"), unit),
-        "funding_sources_total": fmt_money(d.get("funding_sources_total"), unit),
-        "cumulative_net_income": fmt_money(sm.get("total_net_income"), unit),
-        "cumulative_cfo": fmt_money(sm.get("total_cfo"), unit),
+        "construction_period_interest": fmt_money(d.get("construction_period_interest"), unit, lang),
+        "initial_working_capital": fmt_money(d.get("initial_working_capital"), unit, lang),
+        "total_investment_feasibility": fmt_money(d.get("total_investment_feasibility"), unit, lang),
+        "funding_sources_total": fmt_money(d.get("funding_sources_total"), unit, lang),
+        "cumulative_net_income": fmt_money(sm.get("total_net_income"), unit, lang),
+        "cumulative_cfo": fmt_money(sm.get("total_cfo"), unit, lang),
     }
     for code in ("downside", "upside"):
         if code in out["scenarios"]:
             sc = out["scenarios"][code]
-            nn[f"{code}_revenue_last_year"] = fmt_money(sc["series"]["revenue"][-1], unit)
-            nn[f"{code}_cumulative_net_income"] = fmt_money(sc["summary"].get("total_net_income"), unit)
-            nn[f"{code}_min_cash_balance"] = fmt_money(sc["summary"].get("min_cash_balance"), unit)
-            nn[f"{code}_funding_gap"] = fmt_money(sc["summary"].get("funding_gap"), unit)
+            nn[f"{code}_revenue_last_year"] = fmt_money(sc["series"]["revenue"][-1], unit, lang)
+            nn[f"{code}_cumulative_net_income"] = fmt_money(sc["summary"].get("total_net_income"), unit, lang)
+            nn[f"{code}_min_cash_balance"] = fmt_money(sc["summary"].get("min_cash_balance"), unit, lang)
+            nn[f"{code}_funding_gap"] = fmt_money(sc["summary"].get("funding_gap"), unit, lang)
             nn[f"{code}_dscr_min"] = None if sc["summary"].get("dscr_min") is None else f"{sc['summary']['dscr_min']:.2f}"
             nn[f"{code}_irr_with_tv"] = fmt_pct(sc["summary"].get("irr_with_tv"))
     out["narrative_numbers"] = nn
@@ -369,7 +394,13 @@ def build_outputs(results, recs, unit, assumptions, model_path):
 
 
 def write_scenario_sheet(wb, out, recs):
-    ws = wb["情景对比"]
+    from model_i18n import SCENARIO_SHEET_EN
+    lang = LANG
+    def L(text):
+        if lang != "en":
+            return text
+        return SCENARIO_SHEET_EN.get(text, text)
+    ws = wb[recs["scenario_table_anchor"]["sheet"]]
     # 清空旧内容
     for row in ws.iter_rows(min_row=3, max_row=ws.max_row):
         for c in row:
@@ -377,10 +408,10 @@ def write_scenario_sheet(wb, out, recs):
     unit = out["unit"]
     bold = Font(bold=True)
     hdr_fill = PatternFill("solid", fgColor="D9E1F2")
-    ws["A3"] = f"三情景关键结果（静态值，由 recalc_and_extract.py 于 {out['generated']} 写入；修改假设后需重新运行脚本）"
+    ws["A3"] = L("三情景关键结果（静态值，由 recalc_and_extract.py 于 {d} 写入；修改假设后需重新运行脚本）").format(d=out["generated"])
     ws["A3"].font = Font(italic=True, color="666666", size=9)
     r = 5
-    headers = ["指标", "基准", "下行", "上行", "单位"]
+    headers = [L("指标"), L("基准"), L("下行"), L("上行"), L("单位")]
     for j, h in enumerate(headers):
         c = ws.cell(row=r, column=1 + j, value=h)
         c.font = bold
@@ -403,26 +434,27 @@ def write_scenario_sheet(wb, out, recs):
                 return None
         return cur
 
+    yr_u = L("年")
     rows = [
-        (f"营业收入（{years[0]}）", ["series", "revenue", 0], unit, "money"),
-        (f"营业收入（{years[-1]}）", ["series", "revenue", -1], unit, "money"),
-        ("收入 CAGR", ["summary", "revenue_cagr"], "%", "pct"),
-        (f"毛利率（{years[-1]}）", ["series", "gross_margin", -1], "%", "pct"),
-        (f"EBITDA（{years[-1]}）", ["series", "ebitda", -1], unit, "money"),
-        (f"净利润（{years[-1]}）", ["series", "net_income", -1], unit, "money"),
-        ("预测期累计净利润", ["summary", "total_net_income"], unit, "money"),
-        ("首个盈利年份", ["derived", "first_profit_year"], "年", "raw"),
-        ("首个经营现金流为正年份", ["derived", "first_positive_cfo_year"], "年", "raw"),
-        ("最低期末现金", ["summary", "min_cash_balance"], unit, "money"),
-        ("最低现金出现年份", ["summary", "min_cash_year"], "年", "raw"),
-        ("资金缺口（相对最低现金要求）", ["summary", "funding_gap"], unit, "money"),
-        ("峰值资金需求（无融资口径）", ["derived", "peak_funding_need"], unit, "money"),
-        ("最低 DSCR（全部年份）", ["summary", "dscr_min"], "x", "ratio"),
-        ("最低 DSCR（经营期，有还本年份）", ["derived", "dscr_min_operating"], "x", "ratio"),
-        ("项目 IRR（含期末价值）", ["summary", "irr_with_tv"], "%", "pct"),
-        ("项目 IRR（不含期末价值）", ["summary", "irr_no_tv"], "%", "pct"),
-        ("项目 NPV", ["summary", "npv"], unit, "money"),
-        ("回收期（无杠杆 FCF，年）", ["derived", "payback_years_ufcf"], "年", "ratio"),
+        (L("营业收入（{y}）").format(y=years[0]), ["series", "revenue", 0], unit, "money"),
+        (L("营业收入（{y}）").format(y=years[-1]), ["series", "revenue", -1], unit, "money"),
+        (L("收入 CAGR"), ["summary", "revenue_cagr"], "%", "pct"),
+        (L("毛利率（{y}）").format(y=years[-1]), ["series", "gross_margin", -1], "%", "pct"),
+        (L("EBITDA（{y}）").format(y=years[-1]), ["series", "ebitda", -1], unit, "money"),
+        (L("净利润（{y}）").format(y=years[-1]), ["series", "net_income", -1], unit, "money"),
+        (L("预测期累计净利润"), ["summary", "total_net_income"], unit, "money"),
+        (L("首个盈利年份"), ["derived", "first_profit_year"], yr_u, "raw"),
+        (L("首个经营现金流为正年份"), ["derived", "first_positive_cfo_year"], yr_u, "raw"),
+        (L("最低期末现金"), ["summary", "min_cash_balance"], unit, "money"),
+        (L("最低现金出现年份"), ["summary", "min_cash_year"], yr_u, "raw"),
+        (L("资金缺口（相对最低现金要求）"), ["summary", "funding_gap"], unit, "money"),
+        (L("峰值资金需求（无融资口径）"), ["derived", "peak_funding_need"], unit, "money"),
+        (L("最低 DSCR（全部年份）"), ["summary", "dscr_min"], "x", "ratio"),
+        (L("最低 DSCR（经营期，有还本年份）"), ["derived", "dscr_min_operating"], "x", "ratio"),
+        (L("项目 IRR（含期末价值）"), ["summary", "irr_with_tv"], "%", "pct"),
+        (L("项目 IRR（不含期末价值）"), ["summary", "irr_no_tv"], "%", "pct"),
+        (L("项目 NPV"), ["summary", "npv"], unit, "money"),
+        (L("回收期（无杠杆 FCF，年）"), ["derived", "payback_years_ufcf"], yr_u, "ratio"),
     ]
     fmts = {"money": '#,##0.0;[Red]-#,##0.0;"-"', "pct": "0.0%", "ratio": "0.00", "raw": "0"}
     for label, path, u, kind in rows:
@@ -436,7 +468,7 @@ def write_scenario_sheet(wb, out, recs):
         r += 1
     r += 1
     for series_key, label in [("revenue", "营业收入"), ("net_income", "净利润"), ("closing_cash", "期末现金"), ("cfo", "经营活动现金流")]:
-        c = ws.cell(row=r, column=1, value=f"{label}（逐年，{unit}）")
+        c = ws.cell(row=r, column=1, value=L(label) + L("（逐年，{u}）").format(u=unit))
         c.font = bold
         c.fill = hdr_fill
         for j, y in enumerate(years):
@@ -444,7 +476,7 @@ def write_scenario_sheet(wb, out, recs):
             c.font = bold
             c.fill = hdr_fill
         r += 1
-        for code, lab in zip(codes, ["基准", "下行", "上行"]):
+        for code, lab in zip(codes, [L("基准"), L("下行"), L("上行")]):
             ws.cell(row=r, column=1, value=lab)
             ser = val(code, ["series", series_key]) or []
             for j, v in enumerate(ser):
@@ -463,7 +495,10 @@ def main():
     ap.add_argument("-o", "--output", default="model_outputs.json")
     ap.add_argument("--assumptions", help="可选：assumptions.json，用于把 use_of_funds、情景说明等带入输出")
     ap.add_argument("--no-scenarios", action="store_true", help="只算当前情景")
+    ap.add_argument("--lang", default="zh", choices=["zh", "en"], help="情景表与 narrative_numbers 的语言（与模型语言一致）")
     args = ap.parse_args()
+    global LANG
+    LANG = args.lang
 
     soffice = find_soffice()
     if not soffice:
@@ -478,14 +513,14 @@ def main():
     results = {}
     scenarios = SCENARIOS if not args.no_scenarios else SCENARIOS[:1]
     for code_num, code, label in scenarios:
-        wb_formula["假设"].cell(row=sel["row"], column=sel["col"]).value = code_num
+        wb_formula[sel["sheet"]].cell(row=sel["row"], column=sel["col"]).value = code_num
         tmp_in = os.path.join(tmpdir, f"scenario_{code}", os.path.basename(model_path))
         os.makedirs(os.path.dirname(tmp_in), exist_ok=True)
         wb_formula.save(tmp_in)
         calc = recalc(soffice, tmp_in, os.path.join(tmpdir, f"calc_{code}"))
         results[code] = read_values(calc, recs)
         print(f"[OK] 情景「{label}」重算完成")
-    wb_formula["假设"].cell(row=sel["row"], column=sel["col"]).value = 1
+    wb_formula[sel["sheet"]].cell(row=sel["row"], column=sel["col"]).value = 1
 
     assumptions = None
     if args.assumptions:

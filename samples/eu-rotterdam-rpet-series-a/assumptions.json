@@ -1,0 +1,502 @@
+{
+  "_comment": "Assumptions for the Rotterdam textile-to-rPET Series A plan. All amounts in €k (thousands of euros). Every field cites a register ID (F=fact, A=assumption, E=inference, T=to be confirmed, S=source). Opex/headcount categories must use the model's internal category keys (销售费用=Selling, 管理费用=G&A, 研发费用=R&D, 其他费用=Other, 营业成本=COGS/production labour) — the English tables map them automatically.",
+  "meta": {
+    "project_name": "Rotterdam Textile-to-rPET Plant (12,000 t/yr)",
+    "currency": "EUR",
+    "unit": "€k",
+    "start_year": 2027,
+    "years": 5,
+    "existing_business": true
+  },
+  "scenarios": {
+    "downside": {
+      "volume": 0.85,
+      "price": 0.95,
+      "unit_cost": 1.04,
+      "opex": 1.03,
+      "label": "Downside: volume -15% (Line 1 commissioning slips ~6 months and offtake converts more slowly, R-01/R-02), price -5% (virgin PET at or below €1,000/t and flake imports, R-03), unit cost +4% (feedstock competition as EPR-funded sorting scales, R-04), opex +3%"
+    },
+    "upside": {
+      "volume": 1.08,
+      "price": 1.05,
+      "unit_cost": 0.97,
+      "opex": 1.0,
+      "label": "Upside: volume +8% (faster Line 2 utilisation as separate collection volumes grow), price +5% (PPWR/EPR demand pull and certified-content premium), unit cost -3% (negative-value feedstock fractions)"
+    },
+    "rationale": "Multipliers derived from the risk matrix (chapter 13): downside combines the probability-medium-or-higher risks R-01 to R-04 occurring together; upside only includes mechanisms with a regulatory or contractual basis."
+  },
+  "revenue_lines": [
+    {
+      "id": "R1",
+      "name": "rPET pellets (fibre & non-food packaging grade)",
+      "unit": "t",
+      "volume": [
+        1440,
+        3240,
+        4800,
+        6300,
+        6600
+      ],
+      "price": {
+        "year1": 1.25,
+        "growth": 0.015
+      },
+      "unit_cost": {
+        "year1": 0.63,
+        "growth": -0.02
+      },
+      "source": "A-01 (capacity x utilisation ramp: pilot 1,500 t + Line 1 6,000 t from Q4 2027 + Line 2 to 12,000 t from mid-2029), A-02 (60% pellet mix), A-03 (ASP €1,250/t vs NWE food-grade rPET ~€1,350-1,440/t and vPET €1,000-1,100/t, S-07), A-05/A-06/A-07 (feedstock €250/t, yield 76%, conversion €300/t)"
+    },
+    {
+      "id": "R2",
+      "name": "rPET flakes",
+      "unit": "t",
+      "volume": [
+        960,
+        2160,
+        3200,
+        4200,
+        4400
+      ],
+      "price": {
+        "year1": 0.95,
+        "growth": 0.015
+      },
+      "unit_cost": {
+        "year1": 0.54,
+        "growth": -0.02
+      },
+      "source": "A-01, A-02 (40% flake mix), A-04 (ASP €950/t, in line with NWE rPET flake €950-990/t, S-07), A-05/A-06/A-08 (flakes skip extrusion/SSP: conversion €210/t)"
+    }
+  ],
+  "opex_lines": [
+    {
+      "id": "O1",
+      "name": "Site lease — industrial hall, Port of Rotterdam area",
+      "category": "管理费用",
+      "values": {
+        "year1": 420,
+        "growth": 0.025
+      },
+      "source": "A-10 (hall sized for 12,000 t/yr from day one; lease terms T-04)"
+    },
+    {
+      "id": "O2",
+      "name": "Fixed utilities, waste water & site services",
+      "category": "其他费用",
+      "values": {
+        "year1": 90,
+        "growth": 0.03
+      },
+      "source": "A-11"
+    },
+    {
+      "id": "O3",
+      "name": "Maintenance, spares & insurance",
+      "category": "其他费用",
+      "values": [
+        120,
+        180,
+        220,
+        300,
+        320
+      ],
+      "source": "A-12 (≈2.5% of installed equipment value)"
+    },
+    {
+      "id": "O4",
+      "name": "Certification, audits, lab & compliance (GRS/RCS/ISCC+, permits)",
+      "category": "管理费用",
+      "values": [
+        60,
+        70,
+        80,
+        90,
+        95
+      ],
+      "source": "A-13, T-06"
+    },
+    {
+      "id": "O5",
+      "name": "Sales, marketing, trade fairs & customer sampling",
+      "category": "销售费用",
+      "values": {
+        "pct_of_revenue": 0.02
+      },
+      "source": "A-14 (B2B materials benchmark 1.5-3% of revenue)"
+    },
+    {
+      "id": "O6",
+      "name": "Process R&D & pilot trials",
+      "category": "研发费用",
+      "values": [
+        150,
+        160,
+        180,
+        200,
+        210
+      ],
+      "source": "A-15"
+    },
+    {
+      "id": "O7",
+      "name": "Professional services, legal, IT & office",
+      "category": "管理费用",
+      "values": {
+        "year1": 110,
+        "growth": 0.04
+      },
+      "source": "A-16 (includes grant application support)"
+    }
+  ],
+  "headcount": [
+    {
+      "id": "H1",
+      "role": "Management & finance",
+      "category": "管理费用",
+      "count": [
+        3,
+        3,
+        4,
+        4,
+        5
+      ],
+      "annual_cost": 95,
+      "cost_growth": 0.03
+    },
+    {
+      "id": "H2",
+      "role": "Commercial, offtake & sustainability",
+      "category": "销售费用",
+      "count": [
+        2,
+        3,
+        4,
+        4,
+        5
+      ],
+      "annual_cost": 80,
+      "cost_growth": 0.03
+    },
+    {
+      "id": "H3",
+      "role": "Process engineering & R&D",
+      "category": "研发费用",
+      "count": [
+        2,
+        3,
+        3,
+        4,
+        4
+      ],
+      "annual_cost": 85,
+      "cost_growth": 0.03
+    },
+    {
+      "id": "H4",
+      "role": "Plant operations (shift operators, QC)",
+      "category": "营业成本",
+      "count": [
+        8,
+        12,
+        16,
+        20,
+        21
+      ],
+      "annual_cost": 58,
+      "cost_growth": 0.03
+    }
+  ],
+  "capex": [
+    {
+      "id": "C1a",
+      "name": "Line 1 equipment — order deposit & detailed engineering (40%)",
+      "amount": 2200,
+      "year": 1,
+      "life_years": 10,
+      "salvage_pct": 0.05,
+      "source": "A-19 (≈€900-1,000 per annual tonne, mechanical rPET benchmark; EPC quotes T-07)"
+    },
+    {
+      "id": "C1b",
+      "name": "Line 1 equipment — delivery, installation & commissioning (60%)",
+      "amount": 3300,
+      "year": 1,
+      "life_years": 10,
+      "salvage_pct": 0.05,
+      "source": "A-19"
+    },
+    {
+      "id": "C2",
+      "name": "Building fit-out, utilities connection, permits & engineering",
+      "amount": 1400,
+      "year": 1,
+      "life_years": 10,
+      "source": "A-20"
+    },
+    {
+      "id": "C3",
+      "name": "Line 2 (to 12,000 t/yr): second extrusion/SSP train, washing & sorting expansion",
+      "amount": 5200,
+      "year": 3,
+      "life_years": 10,
+      "salvage_pct": 0.05,
+      "source": "A-21 (gate G2: Line 1 utilisation >80% and contracted offtake ≥60% of Line 2)"
+    },
+    {
+      "id": "C4",
+      "name": "Sustaining capex & QC lab upgrades (2028)",
+      "amount": 150,
+      "year": 2,
+      "life_years": 5,
+      "source": "A-22"
+    },
+    {
+      "id": "C5",
+      "name": "Sustaining capex (2030)",
+      "amount": 200,
+      "year": 4,
+      "life_years": 5,
+      "source": "A-22"
+    },
+    {
+      "id": "C6",
+      "name": "Sustaining capex (2031)",
+      "amount": 250,
+      "year": 5,
+      "life_years": 5,
+      "source": "A-22"
+    }
+  ],
+  "working_capital": {
+    "ar_days": 45,
+    "inventory_days": 35,
+    "ap_days": 30,
+    "other_current_assets_pct": 0.0,
+    "source": "A-23 (brand/converter payment terms 30-60 days), A-24 (feedstock + finished goods ≈5 weeks), A-25"
+  },
+  "financing": {
+    "equity": [
+      {
+        "year": 1,
+        "amount": 4000,
+        "note": "Series A (Q1 2027) — F-05 (amount sought); pre-money valuation T-08"
+      },
+      {
+        "year": 3,
+        "amount": 2500,
+        "note": "Series B / growth equity at gate G2 (2029) — NOT committed (A-30); see 'Phase 1 only' variant for the no-Series-B case"
+      }
+    ],
+    "grants": [
+      {
+        "year": 1,
+        "amount": 500,
+        "note": "Circular-economy grant tranche 1 — UNCERTAIN (A-26): EIC Accelerator / RVO DEI+ type scheme; eligibility not asserted; see no-grant sensitivity case"
+      },
+      {
+        "year": 2,
+        "amount": 750,
+        "note": "Circular-economy grant tranche 2 — UNCERTAIN (A-26)"
+      }
+    ],
+    "loans": [
+      {
+        "id": "L1",
+        "name": "Equipment-backed term loan (Line 1)",
+        "amount": 3600,
+        "year": 1,
+        "rate": 0.065,
+        "term_years": 7,
+        "grace_years": 2,
+        "source": "A-27 (≈65% LTV on Line 1 equipment, typical of new-machinery lease/ABL; 2-year grace during ramp-up; indicative terms T-09)"
+      },
+      {
+        "id": "L2",
+        "name": "Equipment-backed term loan (Line 2)",
+        "amount": 3000,
+        "year": 3,
+        "rate": 0.065,
+        "term_years": 7,
+        "grace_years": 1,
+        "source": "A-28 (drawn at gate G2 in 2029, ≈58% LTV on Line 2)"
+      }
+    ],
+    "dividend_payout": 0.0,
+    "use_of_funds": [
+      {
+        "name": "Line 1 equipment (6,000 t/yr)",
+        "amount": 5500
+      },
+      {
+        "name": "Building fit-out, utilities, permits & engineering",
+        "amount": 1400
+      },
+      {
+        "name": "Line 2 equipment (to 12,000 t/yr, 2029)",
+        "amount": 5200
+      },
+      {
+        "name": "Working capital & ramp-up losses",
+        "amount": 1850
+      },
+      {
+        "name": "Certification, process R&D & commercial build-out",
+        "amount": 400
+      }
+    ]
+  },
+  "tax": {
+    "income_tax_rate": 0.258,
+    "opening_loss_carryforward": 1175,
+    "notes": "Dutch corporate income tax headline rate 25.8% (19% on first €200k ignored — simplification, A-29). Opening tax losses assumed equal to accumulated losses at 31 Dec 2026 (A-33); Dutch loss offset is limited to 50% of taxable profit above €1m per year — the model ignores this timing limit (disclosed)."
+  },
+  "valuation": {
+    "discount_rate": 0.14,
+    "terminal_method": "multiple",
+    "ebitda_multiple": 7,
+    "terminal_growth": 0.02
+  },
+  "min_cash": 300,
+  "monthly_year1": {
+    "year_index": 1,
+    "seasonality": [
+      0.06,
+      0.06,
+      0.065,
+      0.07,
+      0.07,
+      0.075,
+      0.075,
+      0.08,
+      0.08,
+      0.11,
+      0.12,
+      0.135
+    ],
+    "equity_month": 2,
+    "loan_month": 3,
+    "grant_month": 9,
+    "capex_months": {
+      "C1a": 2,
+      "C1b": 9,
+      "C2": 3
+    }
+  },
+  "opening_balance": {
+    "cash": 450,
+    "accounts_receivable": 95,
+    "inventory": 60,
+    "other_current_assets": 0,
+    "fixed_assets_net": 900,
+    "fixed_assets_remaining_life": 6,
+    "accounts_payable": 80,
+    "loans": 0,
+    "loan_rate": 0.0,
+    "loan_remaining_years": 0,
+    "paid_in_capital": 2600,
+    "capital_reserve": 0,
+    "retained_earnings": -1175
+  },
+  "sources": [
+    {
+      "id": "F-01",
+      "content": "Dutch BV founded 2024, Rotterdam, 9 people; 1,500 t/yr pilot line; two offtake LOIs with European brands; ~€620k revenue in 2026",
+      "source": "User brief (2026-11-02)",
+      "grade": "A",
+      "confidence": "High",
+      "impact": "Ch. 2, 4.6; opening balance",
+      "confirm": "No"
+    },
+    {
+      "id": "F-05",
+      "content": "Series A target €4.0m; grant ambition €1.0-1.5m",
+      "source": "User brief",
+      "grade": "A",
+      "confidence": "High",
+      "impact": "financing.equity, financing.grants",
+      "confirm": "No"
+    },
+    {
+      "id": "A-01",
+      "content": "Output volumes 2,400 / 5,400 / 8,000 / 10,500 / 11,000 t (2027-2031)",
+      "source": "Pilot 1,500 t/yr at ~95% + Line 1 (6,000 t/yr) commissioned Q4 2027 (≈1,000 t in 2027), 70% avg utilisation 2028; Line 2 from mid-2029; 2031 utilisation 92% of 12,000 t",
+      "grade": "D",
+      "confidence": "Medium",
+      "impact": "revenue_lines[*].volume",
+      "confirm": "Yes"
+    },
+    {
+      "id": "A-03",
+      "content": "Pellet ASP €1,250/t (2027), +1.5%/yr",
+      "source": "Between NWE rPET flake (€950-990/t) and food-grade pellet (vPET €1,000-1,100 + €340 premium) — S-07; textile-derived pellets are non-food grade",
+      "grade": "B",
+      "confidence": "Medium",
+      "impact": "revenue_lines[0].price",
+      "confirm": "Yes"
+    },
+    {
+      "id": "A-04",
+      "content": "Flake ASP €950/t (2027), +1.5%/yr",
+      "source": "NWE rPET flake €950-990/t, March 2026 — S-07",
+      "grade": "B",
+      "confidence": "Medium",
+      "impact": "revenue_lines[1].price",
+      "confirm": "Yes"
+    },
+    {
+      "id": "A-05",
+      "content": "Feedstock €250/t delivered (sorted, ≥90% polyester)",
+      "source": "Sorted second-hand prices below processing cost since spring 2024 (S-16); fibre-sorting cost benchmark; user pilot data missing (T-02)",
+      "grade": "D",
+      "confidence": "Low",
+      "impact": "unit_cost",
+      "confirm": "Yes"
+    },
+    {
+      "id": "A-06",
+      "content": "Yield 76% (output t per input t)",
+      "source": "Trims, non-PET content, moisture and fines losses — pilot data to confirm",
+      "grade": "D",
+      "confidence": "Low",
+      "impact": "unit_cost",
+      "confirm": "Yes"
+    },
+    {
+      "id": "A-19",
+      "content": "Line 1 capex €5.5m + €1.4m site/permits",
+      "source": "≈€900-1,000 per annual tonne of mechanical rPET capacity; no EPC quote yet (T-07)",
+      "grade": "D",
+      "confidence": "Low",
+      "impact": "capex[0-1]",
+      "confirm": "Yes"
+    },
+    {
+      "id": "A-26",
+      "content": "Grant €1.25m received 2027-28 (€0.5m / €0.75m)",
+      "source": "RVO DEI+ circular economy: 40% + 20pp (small enterprise) of extra investment cost, 2026 round oversubscribed (S-10, S-11); EIC Accelerator grant ≤€2.5m (S-09). Eligibility NOT asserted; no-grant sensitivity run",
+      "grade": "C",
+      "confidence": "Low",
+      "impact": "financing.grants",
+      "confirm": "Yes"
+    },
+    {
+      "id": "A-27",
+      "content": "Equipment-backed loan €3.6m, 6.5%, 7 years, 2-year grace",
+      "source": "≈65% LTV on Line 1 equipment; Dutch SME asset-based lending/lease indicative range 5.5-7.5% (to verify with lenders, T-09)",
+      "grade": "D",
+      "confidence": "Low",
+      "impact": "financing.loans[0]",
+      "confirm": "Yes"
+    },
+    {
+      "id": "A-30",
+      "content": "Series B / growth equity €2.5m in 2029 at gate G2",
+      "source": "Required to complete Line 2 together with L2; not committed — 'Phase 1 only' variant shows the company without it",
+      "grade": "D",
+      "confidence": "Low",
+      "impact": "financing.equity[1]",
+      "confirm": "Yes"
+    }
+  ]
+}

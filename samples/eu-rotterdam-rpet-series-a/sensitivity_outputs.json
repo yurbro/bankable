@@ -1,0 +1,578 @@
+{
+  "unit": "€k",
+  "base": {
+    "revenue_last": 13192.7489342687,
+    "total_net_income": -919.912460661639,
+    "min_cash_balance": 467.007123287671,
+    "funding_gap": 0,
+    "peak_funding_need": 12963.0,
+    "irr_with_tv": 0.240543169755517,
+    "npv": 3072.64743052491,
+    "equity_irr": 0.372023650079928,
+    "dscr_min": 1.24,
+    "first_profit_year": 2030,
+    "cumulative_net_income": -919.912460661639
+  },
+  "cases": [
+    {
+      "id": "volume-20",
+      "label": "Volume −20%",
+      "pair": "Volume ±20%",
+      "metrics": {
+        "revenue_last": 10554.199147415,
+        "total_net_income": -5302.36851168781,
+        "min_cash_balance": -1640.77415400702,
+        "funding_gap": 1940.77415400702,
+        "peak_funding_need": 14468.3,
+        "irr_with_tv": -0.0122751981119413,
+        "npv": -3741.35508361134,
+        "equity_irr": -0.068965903922085,
+        "dscr_min": 0.45,
+        "first_profit_year": null,
+        "cumulative_net_income": -5302.36851168781
+      },
+      "delta_vs_base": {
+        "revenue_last": -2638.5497868537004,
+        "total_net_income": -4382.456051026171,
+        "min_cash_balance": -2107.781277294691,
+        "funding_gap": 1940.77415400702,
+        "peak_funding_need": 1505.2999999999993,
+        "irr_with_tv": -0.2528183678674583,
+        "npv": -6814.002514136249,
+        "equity_irr": -0.440989554002013,
+        "dscr_min": -0.79,
+        "first_profit_year": null,
+        "cumulative_net_income": -4382.456051026171
+      }
+    },
+    {
+      "id": "volume+20",
+      "label": "Volume +20%",
+      "pair": "Volume ±20%",
+      "metrics": {
+        "revenue_last": 15831.2987211225,
+        "total_net_income": 2872.35734405048,
+        "min_cash_balance": 643.553753424657,
+        "funding_gap": 0,
+        "peak_funding_need": 11457.8,
+        "irr_with_tv": 0.42156262685218,
+        "npv": 9886.64994466115,
+        "equity_irr": 0.591561015110852,
+        "dscr_min": 2.04,
+        "first_profit_year": 2029,
+        "cumulative_net_income": 2872.35734405048
+      },
+      "delta_vs_base": {
+        "revenue_last": 2638.5497868538005,
+        "total_net_income": 3792.2698047121194,
+        "min_cash_balance": 176.54663013698598,
+        "funding_gap": 0,
+        "peak_funding_need": -1505.2000000000007,
+        "irr_with_tv": 0.18101945709666298,
+        "npv": 6814.00251413624,
+        "equity_irr": 0.21953736503092403,
+        "dscr_min": 0.8,
+        "first_profit_year": null,
+        "cumulative_net_income": 3792.2698047121194
+      }
+    },
+    {
+      "id": "price-10",
+      "label": "Price −10%",
+      "pair": "Price ±10%",
+      "metrics": {
+        "revenue_last": 11873.4740408419,
+        "total_net_income": -5214.12417231872,
+        "min_cash_balance": -1729.52312648887,
+        "funding_gap": 2029.52312648887,
+        "peak_funding_need": 14635.2,
+        "irr_with_tv": 0.000387972096028592,
+        "npv": -3522.41493822027,
+        "equity_irr": -0.0402514266605699,
+        "dscr_min": 0.45,
+        "first_profit_year": null,
+        "cumulative_net_income": -5214.12417231872
+      },
+      "delta_vs_base": {
+        "revenue_last": -1319.2748934268002,
+        "total_net_income": -4294.211711657082,
+        "min_cash_balance": -2196.530249776541,
+        "funding_gap": 2029.52312648887,
+        "peak_funding_need": 1672.2000000000007,
+        "irr_with_tv": -0.24015519765948842,
+        "npv": -6595.06236874518,
+        "equity_irr": -0.4122750767404979,
+        "dscr_min": -0.79,
+        "first_profit_year": null,
+        "cumulative_net_income": -4294.211711657082
+      }
+    },
+    {
+      "id": "price+10",
+      "label": "Price +10%",
+      "pair": "Price ±10%",
+      "metrics": {
+        "revenue_last": 14512.0238276956,
+        "total_net_income": 2806.88004423863,
+        "min_cash_balance": 699.793315068493,
+        "funding_gap": 0,
+        "peak_funding_need": 11290.9,
+        "irr_with_tv": 0.419562219448397,
+        "npv": 9667.70979927008,
+        "equity_irr": 0.584601367732422,
+        "dscr_min": 2.04,
+        "first_profit_year": 2029,
+        "cumulative_net_income": 2806.88004423863
+      },
+      "delta_vs_base": {
+        "revenue_last": 1319.2748934269002,
+        "total_net_income": 3726.792504900269,
+        "min_cash_balance": 232.78619178082204,
+        "funding_gap": 0,
+        "peak_funding_need": -1672.1000000000004,
+        "irr_with_tv": 0.17901904969288,
+        "npv": 6595.06236874517,
+        "equity_irr": 0.212577717652494,
+        "dscr_min": 0.8,
+        "first_profit_year": null,
+        "cumulative_net_income": 3726.792504900269
+      }
+    },
+    {
+      "id": "unit_cost+10",
+      "label": "Unit cost +10%",
+      "pair": "Unit cost ±10%",
+      "metrics": {
+        "revenue_last": 13192.7489342687,
+        "total_net_income": -3022.89614680564,
+        "min_cash_balance": -100.740770343331,
+        "funding_gap": 400.740770343331,
+        "peak_funding_need": 13882.6,
+        "irr_with_tv": 0.135939002825686,
+        "npv": -115.413681152146,
+        "equity_irr": 0.219096569832277,
+        "dscr_min": 0.85,
+        "first_profit_year": 2030,
+        "cumulative_net_income": -3022.89614680564
+      },
+      "delta_vs_base": {
+        "revenue_last": 0.0,
+        "total_net_income": -2102.983686144001,
+        "min_cash_balance": -567.747893631002,
+        "funding_gap": 400.740770343331,
+        "peak_funding_need": 919.6000000000004,
+        "irr_with_tv": -0.10460416692983102,
+        "npv": -3188.061111677056,
+        "equity_irr": -0.152927080247651,
+        "dscr_min": -0.39,
+        "first_profit_year": null,
+        "cumulative_net_income": -2102.983686144001
+      }
+    },
+    {
+      "id": "unit_cost-10",
+      "label": "Unit cost −10%",
+      "pair": "Unit cost ±10%",
+      "metrics": {
+        "revenue_last": 13192.7489342687,
+        "total_net_income": 1180.98884930791,
+        "min_cash_balance": 611.52,
+        "funding_gap": 0,
+        "peak_funding_need": 12043.5,
+        "irr_with_tv": 0.3331400607194,
+        "npv": 6260.70854220195,
+        "equity_irr": 0.489052392834011,
+        "dscr_min": 1.64,
+        "first_profit_year": 2029,
+        "cumulative_net_income": 1180.98884930791
+      },
+      "delta_vs_base": {
+        "revenue_last": 0.0,
+        "total_net_income": 2100.901309969549,
+        "min_cash_balance": 144.512876712329,
+        "funding_gap": 0,
+        "peak_funding_need": -919.5,
+        "irr_with_tv": 0.09259689096388299,
+        "npv": 3188.06111167704,
+        "equity_irr": 0.11702874275408298,
+        "dscr_min": 0.3999999999999999,
+        "first_profit_year": null,
+        "cumulative_net_income": 2100.901309969549
+      }
+    },
+    {
+      "id": "opex+10",
+      "label": "Opex +10%",
+      "pair": "Opex ±10%",
+      "metrics": {
+        "revenue_last": 13192.7489342687,
+        "total_net_income": -2072.72588089018,
+        "min_cash_balance": 318.39194520548,
+        "funding_gap": 0,
+        "peak_funding_need": 13536.8,
+        "irr_with_tv": 0.188935608050084,
+        "npv": 1453.75669278919,
+        "equity_irr": 0.300903298214316,
+        "dscr_min": 1.04,
+        "first_profit_year": 2030,
+        "cumulative_net_income": -2072.72588089018
+      },
+      "delta_vs_base": {
+        "revenue_last": 0.0,
+        "total_net_income": -1152.8134202285412,
+        "min_cash_balance": -148.615178082191,
+        "funding_gap": 0,
+        "peak_funding_need": 573.7999999999993,
+        "irr_with_tv": -0.051607561705433014,
+        "npv": -1618.8907377357198,
+        "equity_irr": -0.071120351865612,
+        "dscr_min": -0.19999999999999996,
+        "first_profit_year": null,
+        "cumulative_net_income": -1152.8134202285412
+      }
+    },
+    {
+      "id": "opex-10",
+      "label": "Opex −10%",
+      "pair": "Opex ±10%",
+      "metrics": {
+        "revenue_last": 13192.7489342687,
+        "total_net_income": 232.900959566899,
+        "min_cash_balance": 615.622301369863,
+        "funding_gap": 0,
+        "peak_funding_need": 12389.3,
+        "irr_with_tv": 0.289716645737286,
+        "npv": 4691.53816826062,
+        "equity_irr": 0.434345894715129,
+        "dscr_min": 1.45,
+        "first_profit_year": 2030,
+        "cumulative_net_income": 232.900959566899
+      },
+      "delta_vs_base": {
+        "revenue_last": 0.0,
+        "total_net_income": 1152.813420228538,
+        "min_cash_balance": 148.61517808219196,
+        "funding_gap": 0,
+        "peak_funding_need": -573.7000000000007,
+        "irr_with_tv": 0.049173475981768994,
+        "npv": 1618.8907377357104,
+        "equity_irr": 0.06232224463520103,
+        "dscr_min": 0.20999999999999996,
+        "first_profit_year": null,
+        "cumulative_net_income": 1152.813420228538
+      }
+    },
+    {
+      "id": "capex+20",
+      "label": "Capex +20%",
+      "pair": "Capex ±20%",
+      "metrics": {
+        "revenue_last": 13192.7489342687,
+        "total_net_income": -1928.81246066164,
+        "min_cash_balance": -1483.03619671233,
+        "funding_gap": 1783.03619671233,
+        "peak_funding_need": 15413.0,
+        "irr_with_tv": 0.177161419829093,
+        "npv": 1257.90202905246,
+        "equity_irr": 0.316316693873454,
+        "dscr_min": 1.24,
+        "first_profit_year": 2030,
+        "cumulative_net_income": -1928.81246066164
+      },
+      "delta_vs_base": {
+        "revenue_last": 0.0,
+        "total_net_income": -1008.900000000001,
+        "min_cash_balance": -1950.043320000001,
+        "funding_gap": 1783.03619671233,
+        "peak_funding_need": 2450.0,
+        "irr_with_tv": -0.06338174992642401,
+        "npv": -1814.7454014724499,
+        "equity_irr": -0.05570695620647398,
+        "dscr_min": 0.0,
+        "first_profit_year": null,
+        "cumulative_net_income": -1008.900000000001
+      }
+    },
+    {
+      "id": "capex-20",
+      "label": "Capex −20%",
+      "pair": "Capex ±20%",
+      "metrics": {
+        "revenue_last": 13192.7489342687,
+        "total_net_income": 88.9875393383616,
+        "min_cash_balance": 1847.00712328767,
+        "funding_gap": 0,
+        "peak_funding_need": 10513.0,
+        "irr_with_tv": 0.320315534632509,
+        "npv": 4887.39283199736,
+        "equity_irr": 0.422189601959908,
+        "dscr_min": 1.24,
+        "first_profit_year": 2030,
+        "cumulative_net_income": 88.9875393383616
+      },
+      "delta_vs_base": {
+        "revenue_last": 0.0,
+        "total_net_income": 1008.9000000000005,
+        "min_cash_balance": 1379.999999999999,
+        "funding_gap": 0,
+        "peak_funding_need": -2450.0,
+        "irr_with_tv": 0.07977236487699199,
+        "npv": 1814.7454014724503,
+        "equity_irr": 0.05016595187998002,
+        "dscr_min": 0.0,
+        "first_profit_year": null,
+        "cumulative_net_income": 1008.9000000000005
+      }
+    },
+    {
+      "id": "ar+30",
+      "label": "Receivable days +30",
+      "pair": "Receivable days ±30",
+      "metrics": {
+        "revenue_last": 13192.7489342687,
+        "total_net_income": -919.912460661639,
+        "min_cash_balance": 201.492515616435,
+        "funding_gap": 98.5074843835646,
+        "peak_funding_need": 13728.5,
+        "irr_with_tv": 0.213226623145008,
+        "npv": 2299.762583839,
+        "equity_irr": 0.349000801406016,
+        "dscr_min": 1.24,
+        "first_profit_year": 2030,
+        "cumulative_net_income": -919.912460661639
+      },
+      "delta_vs_base": {
+        "revenue_last": 0.0,
+        "total_net_income": 0.0,
+        "min_cash_balance": -265.514607671236,
+        "funding_gap": 98.5074843835646,
+        "peak_funding_need": 765.5,
+        "irr_with_tv": -0.027316546610509,
+        "npv": -772.8848466859099,
+        "equity_irr": -0.023022848673911966,
+        "dscr_min": 0.0,
+        "first_profit_year": null,
+        "cumulative_net_income": 0.0
+      }
+    },
+    {
+      "id": "ar-30",
+      "label": "Receivable days −30",
+      "pair": "Receivable days ±30",
+      "metrics": {
+        "revenue_last": 13192.7489342687,
+        "total_net_income": -919.912460661639,
+        "min_cash_balance": 689.911232876712,
+        "funding_gap": 0,
+        "peak_funding_need": 12197.6,
+        "irr_with_tv": 0.269447633471335,
+        "npv": 3845.53227721081,
+        "equity_irr": 0.394042901598627,
+        "dscr_min": 1.24,
+        "first_profit_year": 2030,
+        "cumulative_net_income": -919.912460661639
+      },
+      "delta_vs_base": {
+        "revenue_last": 0.0,
+        "total_net_income": 0.0,
+        "min_cash_balance": 222.904109589041,
+        "funding_gap": 0,
+        "peak_funding_need": -765.3999999999996,
+        "irr_with_tv": 0.02890446371581798,
+        "npv": 772.8848466859004,
+        "equity_irr": 0.02201925151869899,
+        "dscr_min": 0.0,
+        "first_profit_year": null,
+        "cumulative_net_income": 0.0
+      }
+    },
+    {
+      "id": "nogrant",
+      "label": "No grant (€0 instead of €1.25m)",
+      "pair": "No grant",
+      "metrics": {
+        "revenue_last": 13192.7489342687,
+        "total_net_income": -919.912460661639,
+        "min_cash_balance": -485.657564383563,
+        "funding_gap": 785.657564383563,
+        "peak_funding_need": 12963.0,
+        "irr_with_tv": 0.240543169755517,
+        "npv": 3072.64743052491,
+        "equity_irr": 0.345388179249074,
+        "dscr_min": 1.24,
+        "first_profit_year": 2030,
+        "cumulative_net_income": -919.912460661639
+      },
+      "delta_vs_base": {
+        "revenue_last": 0.0,
+        "total_net_income": 0.0,
+        "min_cash_balance": -952.664687671234,
+        "funding_gap": 785.657564383563,
+        "peak_funding_need": 0.0,
+        "irr_with_tv": 0.0,
+        "npv": 0.0,
+        "equity_irr": -0.02663547083085399,
+        "dscr_min": 0.0,
+        "first_profit_year": null,
+        "cumulative_net_income": 0.0
+      }
+    },
+    {
+      "id": "unit_cost+25",
+      "label": "Unit cost +25% (feedstock ≈€400/t)",
+      "pair": "Unit cost +25%",
+      "metrics": {
+        "revenue_last": 13192.7489342687,
+        "total_net_income": -6177.37167602164,
+        "min_cash_balance": -2873.89185543823,
+        "funding_gap": 3173.89185543823,
+        "peak_funding_need": 15261.9,
+        "irr_with_tv": -0.0606911404842532,
+        "npv": -4897.50534866772,
+        "equity_irr": -0.215328960173291,
+        "dscr_min": 0.25,
+        "first_profit_year": null,
+        "cumulative_net_income": -6177.37167602164
+      },
+      "delta_vs_base": {
+        "revenue_last": 0.0,
+        "total_net_income": -5257.4592153600015,
+        "min_cash_balance": -3340.8989787259006,
+        "funding_gap": 3173.89185543823,
+        "peak_funding_need": 2298.8999999999996,
+        "irr_with_tv": -0.3012343102397702,
+        "npv": -7970.152779192629,
+        "equity_irr": -0.5873526102532189,
+        "dscr_min": -0.99,
+        "first_profit_year": null,
+        "cumulative_net_income": -5257.4592153600015
+      }
+    },
+    {
+      "id": "line2capex+30",
+      "label": "Line 2 capex +30% (€6.76m)",
+      "pair": "Line 2 capex +30%",
+      "metrics": {
+        "revenue_last": 13192.7489342687,
+        "total_net_income": -1364.51246066164,
+        "min_cash_balance": -593.036196712333,
+        "funding_gap": 893.036196712333,
+        "peak_funding_need": 14523.0,
+        "irr_with_tv": 0.206917486501945,
+        "npv": 2087.99672331107,
+        "equity_irr": 0.338556679261087,
+        "dscr_min": 1.24,
+        "first_profit_year": 2030,
+        "cumulative_net_income": -1364.51246066164
+      },
+      "delta_vs_base": {
+        "revenue_last": 0.0,
+        "total_net_income": -444.60000000000105,
+        "min_cash_balance": -1060.0433200000039,
+        "funding_gap": 893.036196712333,
+        "peak_funding_need": 1560.0,
+        "irr_with_tv": -0.033625683253572014,
+        "npv": -984.6507072138397,
+        "equity_irr": -0.03346697081884098,
+        "dscr_min": 0.0,
+        "first_profit_year": null,
+        "cumulative_net_income": -444.60000000000105
+      }
+    },
+    {
+      "id": "noseriesb",
+      "label": "Series B not raised, Line 2 still built",
+      "pair": "No Series B",
+      "metrics": {
+        "revenue_last": 13192.7489342687,
+        "total_net_income": -919.912460661639,
+        "min_cash_balance": -1533.03619671233,
+        "funding_gap": 1833.03619671233,
+        "peak_funding_need": 12963.0,
+        "irr_with_tv": 0.240543169755517,
+        "npv": 3072.64743052491,
+        "equity_irr": 0.422549231090668,
+        "dscr_min": 1.24,
+        "first_profit_year": 2030,
+        "cumulative_net_income": -919.912460661639
+      },
+      "delta_vs_base": {
+        "revenue_last": 0.0,
+        "total_net_income": 0.0,
+        "min_cash_balance": -2000.043320000001,
+        "funding_gap": 1833.03619671233,
+        "peak_funding_need": 0.0,
+        "irr_with_tv": 0.0,
+        "npv": 0.0,
+        "equity_irr": 0.050525581010740006,
+        "dscr_min": 0.0,
+        "first_profit_year": null,
+        "cumulative_net_income": 0.0
+      }
+    },
+    {
+      "id": "variant-Phase 1 only (no Line 2, no Series B)",
+      "label": "Phase 1 only (no Line 2, no Series B)",
+      "pair": "Phase 1 only (no Line 2, no Series B)",
+      "variant": true,
+      "metrics": {
+        "revenue_last": 8275.45160422312,
+        "total_net_income": -2373.6744577836,
+        "min_cash_balance": 467.007123287671,
+        "funding_gap": 0,
+        "peak_funding_need": 8385.7,
+        "irr_with_tv": 0.120099569615899,
+        "npv": -420.984208230677,
+        "equity_irr": 0.20151832270371,
+        "dscr_min": 0.96,
+        "first_profit_year": 2030,
+        "cumulative_net_income": -2373.6744577836
+      },
+      "delta_vs_base": {
+        "revenue_last": -4917.29733004558,
+        "total_net_income": -1453.7619971219608,
+        "min_cash_balance": 0.0,
+        "funding_gap": 0,
+        "peak_funding_need": -4577.299999999999,
+        "irr_with_tv": -0.12044360013961801,
+        "npv": -3493.6316387555867,
+        "equity_irr": -0.17050532737621799,
+        "dscr_min": -0.28,
+        "first_profit_year": null,
+        "cumulative_net_income": -1453.7619971219608
+      }
+    },
+    {
+      "id": "variant-Downside with Line 2 deferred",
+      "label": "Downside with Line 2 deferred",
+      "pair": "Downside with Line 2 deferred",
+      "variant": true,
+      "metrics": {
+        "revenue_last": 6682.42717041017,
+        "total_net_income": -6982.3446187413,
+        "min_cash_balance": -3639.43712660514,
+        "funding_gap": 3939.43712660514,
+        "peak_funding_need": 10629.4,
+        "irr_with_tv": null,
+        "npv": -6804.07213460049,
+        "equity_irr": null,
+        "dscr_min": -0.13,
+        "first_profit_year": null,
+        "cumulative_net_income": -6982.3446187413
+      },
+      "delta_vs_base": {
+        "revenue_last": -6510.32176385853,
+        "total_net_income": -6062.432158079661,
+        "min_cash_balance": -4106.444249892811,
+        "funding_gap": 3939.43712660514,
+        "peak_funding_need": -2333.6000000000004,
+        "irr_with_tv": null,
+        "npv": -9876.7195651254,
+        "equity_irr": null,
+        "dscr_min": -1.37,
+        "first_profit_year": null,
+        "cumulative_net_income": -6062.432158079661
+      }
+    }
+  ]
+}

@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.4.0 — 2026-11-02
+
+English-first engagements, from the UK dairy-farm (GBP) and Rotterdam rPET (EUR) eval runs:
+
+- `build_financial_model.py --lang en`: English sheet names and labels (formula references rewritten, user-written names kept); `recalc_and_extract.py --lang en` for the scenario sheet, notes and `narrative_numbers` (£k/€k/$k formatted as "£2,040k" / "£2.87m"); `model_i18n.py` holds the dictionary. English category aliases (selling, g&a/overheads, r&d, other, cogs/direct labour).
+- Model: `opening_balance.land` (non-depreciating), `financing.fixed_distributions` (partners' drawings), loan `schedule` may sum to less than the loan when the term runs past the forecast horizon.
+- Existing businesses: incremental initial working capital, no spurious total-investment warning, `use_of_funds` shortfall reported as "to be funded from operating cash flow".
+- `check_consistency.py --lang en` (English report), Unicode minus and sign-insensitive matching, currency-prefixed amounts (£2.2m, GBP 2,200k, €4 million), thousand-unit models.
+- `run_sensitivity.py`: `--cases` appends to the defaults (`--cases-only` to replace), `patches` for multi-path cases, `--variants path@downside`, ASCII brackets in English, one-sided cases coloured by sign, equity IRR.
+- `make_tables.py`: all-zero rows and empty IRR rows dropped, `--category-labels` (e.g. Overheads for UK), incremental working-capital label for existing businesses.
+- `build_docx.py`: content-weighted column widths, English placeholders.
+- English register and review-memo templates (`assets/*.en.md`); bilingual guide gains an "English-first engagements" section (GBP/EUR conventions, UK/EU/US terms); SKILL.md decides the deliverable language at step 0.
+- README now English by default with a language switch; English diagram set; UK and EU eval cases and sample runs added.
+
 ## v0.3.0 — 2026-11-02
 
 根据银行贷款（存量合作社）和政府申报 + 董事会（双语、建设期项目）两次试跑的反馈：

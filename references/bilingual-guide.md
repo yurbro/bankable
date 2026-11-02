@@ -1,5 +1,23 @@
 # 英文版 / 双语规范
 
+两种情形：**中文主稿 + 英文版**（中国项目给境外读者看，本文第二部分）和 **英文优先的项目**（用户本身是英国/欧洲/北美企业，第一部分）。
+
+## 英文优先的项目（English-first engagements）
+
+用户用英文提需求、读者是当地银行/投资人/评审时，整套交付物从一开始就是英文，不经过中文：
+
+- **单位与货币**：`meta.unit` 用当地习惯——英国 `£k`（银行材料常用整千镑；大额用 £m 一位小数），欧元区 `€k`，美国 `$k`；`meta.currency` 填 GBP/EUR/USD。正文写法 "£2.2m"、"£450k"、"€4.0 million"，表格表头注明单位；核对脚本识别这些写法。不要用 万元 / RMB million。
+- **脚本全部加 `--lang en`**：`build_financial_model.py --lang en`（工作表名和全部固定标签英文，公式引用自动改写；用户自己写的名称保持原样）、`recalc_and_extract.py --lang en`（情景表、narrative_numbers、说明文字英文）、`make_tables.py --lang en --unit £k`（可用 `--category-labels "Selling,Overheads,R&D,Other"` 把 G&A 改成英国习惯的 Overheads）、`make_charts.py --lang en`、`run_sensitivity.py --lang en`、`check_consistency.py --lang en`、`build_docx.py --lang en`、`build_pptx.py --lang en`。
+- **假设文件**：费用与人员类别可直接写英文（selling / sales & marketing、g&a / admin / overheads、r&d、other、cogs / production / direct labour）；收入线、费用线、贷款名称都用英文，它们会原样出现在模型里。
+- **登记册、评审备忘、访谈问题**用英文模板 `assets/register-template.en.md`、`assets/review-memo-template.en.md`；标记用 `[F-xx] [A-xx] [E-xx] [T-xx] [S-n]` 不变，占位符写 `[to be provided: T-xx]`。
+- **当地口径**：英国——partnership 的 partners' capital 和 drawings（用 `financing.fixed_distributions` 建模固定提款，所得税率填 0 并说明合伙人个人纳税）、FY、ppl（便士/升）、Defra/RPA 补助、Bank Rate 加点定价、土地不折旧（`opening_balance.land`）；欧元区——BV/GmbH、EU 法规编号（Directive (EU) 2025/1892、Regulation (EU) 2025/40）、RVO/EIC/Innovation Fund 等资助工具、state-aid 强度上限；美国——LLC/C-corp、SBA 7(a)/504、GAAP 术语。政策与资助一律给文件名 + 机构 + 日期 + 链接，拿不到就 "to verify"。
+- **术语**：用当地读者的词——"turnover" 在英国报表里就是 revenue，"debtors/creditors" = receivables/payables，"gearing" = leverage；美国读者用 revenue/receivables/payables/leverage。
+- **Word**：`--lang en` 自动用 Calibri、英文封面与保密声明、"Page x" 页脚；`--to "Prepared for: <bank>"` 过长时保密声明会退回通用措辞。
+
+下面的"改写原则"同样适用（结论先行、短句、主动语态、数据与机制优先）。
+
+## 中文主稿 + 英文版
+
 英文版给境外投资人、合作伙伴或国际机构看，目标是让他们在不了解中国语境的情况下读懂并信任。做法是**改写**，不是逐句翻译。
 
 ## 流程

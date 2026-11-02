@@ -1,0 +1,160 @@
+{
+  "_comment": "North Yorkshire dairy expansion (440 -> 600 cows, robotic milking, covered slurry store + separator). All money in GBP thousands (£k), constant 2026 prices (no inflation applied to milk price or costs after 2026; interest at nominal rates - conservative). Forecast 2026-2035; 2026 is the estimate year (10 months actual + 2 estimated, actuals not supplied); construction 2027; robots commissioned early 2028. Register references in square brackets.",
+  "meta": {
+    "project_name": "North Yorkshire Dairy Expansion (600-cow robotic unit)",
+    "currency": "GBP",
+    "unit": "£k",
+    "start_year": 2026,
+    "years": 10,
+    "existing_business": true
+  },
+  "scenarios": {
+    "downside": {
+      "volume": [1.0, 1.0, 0.97, 0.97, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+      "price": [1.0, 0.90, 0.90, 0.97, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+      "unit_cost": [1.0, 1.04, 1.04, 1.02, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+      "opex": [1.0, 1.02, 1.02, 1.02, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+      "label": "Downside: a 2026-style trough during construction and ramp-up - milk and livestock prices -10% in 2027-28 (c.35-36ppl) and -3% in 2029, recovering to base from 2030 (R-01); yields 3% below plan in 2028-29 through the robot transition (R-04); feed and variable costs +4% in 2027-28 and +2% in 2029 (R-02); overheads +2% to 2029"
+    },
+    "upside": {
+      "volume": [1.0, 1.0, 1.0, 1.03, 1.03, 1.03, 1.03, 1.03, 1.03, 1.03],
+      "price": [1.0, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05],
+      "unit_cost": [1.0, 1.0, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98],
+      "opex": 1.0,
+      "label": "Upside: milk price +5% (c.42ppl, the 2023-25 average level) as GB supply contracts; robot yield uplift reaches the 10% Lely budget guideline (+3% volume from 2029); variable costs -2% from scale purchasing"
+    },
+    "rationale": "Multipliers taken from the risk matrix (chapter 13): R-01 milk price cycle, R-02 feed cost, R-04 yield/transition. 2026 multipliers are 1.0 because most of the year is already trading history."
+  },
+  "revenue_lines": [
+    {
+      "id": "R1",
+      "name": "Milk sales",
+      "unit": "'000 litres",
+      "volume": [3916, 4050, 4770, 5546, 5760, 5760, 5760, 5760, 5760, 5760],
+      "price": [0.370, 0.390, 0.400, 0.400, 0.400, 0.400, 0.400, 0.400, 0.400, 0.400],
+      "unit_cost": [0.3219, 0.3219, 0.3197, 0.3112, 0.3072, 0.3072, 0.3072, 0.3072, 0.3072, 0.3072],
+      "source": "A-02 (2026: 440 cows x 8,900 l; 37.0ppl), A-03 (price 39.0ppl 2027, 40.0ppl 2028+ constant prices; S-01 S-02 S-05), A-04 (herd 440/455/530/590/600 average cows), A-05 (yield 8,900 -> 9,000 -> 9,400 -> 9,600 l/cow; S-09), A-07 (variable cost £2,865 per cow + 12p per marginal litre -> 32.2ppl falling to 30.7ppl with yield dilution; F-03)"
+    },
+    {
+      "id": "R2",
+      "name": "Livestock sales (cull cows and calves)",
+      "unit": "cows (average herd)",
+      "volume": [440, 455, 530, 590, 600, 600, 600, 600, 600, 600],
+      "price": 0.568,
+      "cogs_pct": 0.10,
+      "source": "A-04 (herd), A-11 (£568 per cow per year of cull cow and calf sales - FY2025 other income split; 10% direct selling costs). Split between livestock and arable is an assumption to confirm (T-02)"
+    },
+    {
+      "id": "R3",
+      "name": "Arable and other income",
+      "unit": "acres cropped",
+      "volume": [300, 300, 240, 240, 240, 240, 240, 240, 240, 240],
+      "price": [0.390, 0.390, 0.396, 0.396, 0.396, 0.396, 0.396, 0.396, 0.396, 0.396],
+      "cogs_pct": 0.55,
+      "source": "A-12 (c.300 acres of cash crops at c.£390/acre output falling to 240 acres from 2028 as land moves to forage for 600 cows; variable costs 55% of output). To confirm (T-02)"
+    }
+  ],
+  "opex_lines": [
+    {"id": "O1", "name": "Family labour charge (partners' remuneration for own labour)", "category": "管理费用", "values": 51.5, "source": "A-08 (FY2025 overheads include family labour; assumed £50k rising to £51.5k in 2026 then constant; covers private drawings)"},
+    {"id": "O2", "name": "Power, fuel and water", "category": "管理费用", "values": [49.5, 49.5, 72.0, 75.0, 76.0, 76.0, 76.0, 76.0, 76.0, 76.0], "source": "A-13 (FY2025 c.£48k; +c.£3.1k electricity per robot (S-10) net of parlour power saved, plus 160 more cows, separator and pumps from 2028)"},
+    {"id": "O3", "name": "Repairs and maintenance (buildings, plant, machinery)", "category": "管理费用", "values": [43.0, 43.0, 50.0, 52.0, 54.0, 55.0, 56.0, 58.0, 60.0, 62.0], "source": "A-13 (FY2025 c.£42k; new buildings and ageing robots add c.£7-19k)"},
+    {"id": "O4", "name": "Robot service contracts, software and consumables (net of parlour costs saved)", "category": "管理费用", "values": [0.0, 0.0, 40.0, 42.0, 44.0, 48.0, 52.0, 56.0, 60.0, 64.0], "source": "A-14 (10 units: c.£5k per unit per year service and consumables (S-10, S-11), less c.£15k existing parlour costs; service costs rise with robot age (S-12))"},
+    {"id": "O5", "name": "Insurance", "category": "管理费用", "values": [18.5, 18.5, 28.0, 28.0, 28.0, 28.0, 28.0, 28.0, 28.0, 28.0], "source": "A-13 (FY2025 c.£18k; £3.1m of new buildings and plant insured from 2028)"},
+    {"id": "O6", "name": "Professional fees, office, levies and subscriptions", "category": "管理费用", "values": [20.5, 22.0, 22.0, 22.0, 22.0, 22.0, 22.0, 22.0, 22.0, 22.0], "source": "A-13 (FY2025 c.£20k; accountancy, AHDB levy, herd software, bank fees)"},
+    {"id": "O7", "name": "Vehicle and sundry overheads", "category": "管理费用", "values": 12.3, "source": "A-13 (FY2025 c.£12k)"}
+  ],
+  "headcount": [
+    {"id": "H1", "role": "Employed farm staff (herdspersons / general)", "category": "管理费用", "count": [3, 3, 3, 3, 3, 3, 3, 3, 3, 3], "annual_cost": 38.5, "cost_growth": 0.0, "source": "F-04 / A-06 (3 FTE in FY2025 at c.£37k each incl. employer costs; robots remove milking labour so 600 cows run with the same 3 FTE plus family - c.120 cows per labour unit)"}
+  ],
+  "capex": [
+    {"id": "C1", "name": "600-cow cubicle shed: groundworks, frame, cubicles, feed fence, ventilation, lighting, water, handling", "amount": 1450, "year": 2, "life_years": 25, "in_service_year": 3, "source": "A-10 (user total c.£3.1m split by estimate; no fixed-price quotes supplied - T-03)"},
+    {"id": "C2", "name": "Robotic milking system: 10 units incl. installation, cooling, software and herd management", "amount": 1200, "year": 3, "life_years": 12, "salvage_pct": 0.10, "source": "A-11 (c.£120k per unit installed, 60 cows per unit; S-10, S-11, S-12)"},
+    {"id": "C3", "name": "Covered slurry store (c.6 months' storage for 600 cows) incl. pumps and transfer", "amount": 350, "year": 2, "life_years": 20, "in_service_year": 3, "source": "A-12 (estimate; grant-eligible item under the Slurry Infrastructure Grant specification - S-13)"},
+    {"id": "C4", "name": "Slurry separator, gantry and stacking pad", "amount": 100, "year": 2, "life_years": 10, "in_service_year": 3, "source": "A-12 (estimate; grant-eligible item - S-13)"},
+    {"id": "C5", "name": "Routine machinery and equipment replacement (2026)", "amount": 50, "year": 1, "life_years": 8, "source": "A-16 (c.£50k per year maintenance capex, in line with the FY2024-25 movement in fixed assets)"},
+    {"id": "C6", "name": "Routine machinery and equipment replacement (2027)", "amount": 50, "year": 2, "life_years": 8, "source": "A-16"},
+    {"id": "C7", "name": "Routine machinery and equipment replacement (2028)", "amount": 50, "year": 3, "life_years": 8, "source": "A-16"},
+    {"id": "C8", "name": "Routine machinery and equipment replacement (2029)", "amount": 50, "year": 4, "life_years": 8, "source": "A-16"},
+    {"id": "C9", "name": "Routine machinery and equipment replacement (2030)", "amount": 50, "year": 5, "life_years": 8, "source": "A-16"},
+    {"id": "C10", "name": "Routine machinery and equipment replacement (2031)", "amount": 50, "year": 6, "life_years": 8, "source": "A-16"},
+    {"id": "C11", "name": "Routine machinery and equipment replacement (2032)", "amount": 50, "year": 7, "life_years": 8, "source": "A-16"},
+    {"id": "C12", "name": "Routine machinery and equipment replacement (2033)", "amount": 50, "year": 8, "life_years": 8, "source": "A-16"},
+    {"id": "C13", "name": "Routine machinery and equipment replacement (2034)", "amount": 50, "year": 9, "life_years": 8, "source": "A-16"},
+    {"id": "C14", "name": "Routine machinery and equipment replacement (2035)", "amount": 50, "year": 10, "life_years": 8, "source": "A-16"}
+  ],
+  "working_capital": {
+    "ar_days": 31,
+    "inventory_days": 154,
+    "ap_days": 30,
+    "other_current_assets_pct": 0.0,
+    "source": "F-07 (debtors £175k = 31 days of turnover; milk cheque monthly in arrears), A-15 (stock and growing crops held at the FY2025 level of 154 days of cost of sales, so the livestock valuation grows with the herd - predominantly home-bred heifers), F-09 (creditors c.30 days)"
+  },
+  "financing": {
+    "equity": [
+      {"year": 2, "amount": 350, "note": "Partners' capital introduced from private funds to complete the own-funds contribution [A-20 - TO CONFIRM; the business balance sheet alone does not fund the £3.1m]"}
+    ],
+    "loans": [
+      {"id": "L1", "name": "Term loan tranche 1 - shed, slurry store, separator (20 years, 24-month capital holiday)", "amount": 1500, "year": 2, "rate": 0.0625, "term_years": 20, "grace_years": 2, "source": "A-17 (Bank Rate 3.75% (S-07) + 2.5% margin = 6.25%; drawn 2027 against construction invoices; interest-only 2027-28; 18 equal capital instalments 2029-2046). A-18: 20-year term recommended in place of the 15-year term first proposed - the 15-year version is shown as a variant"},
+      {"id": "L2", "name": "Term loan tranche 2 - robotic milking system (co-terminus 2046, 12-month capital holiday)", "amount": 700, "year": 3, "rate": 0.0625, "term_years": 19, "grace_years": 1, "source": "A-17 / A-18 (second stage of the same £2.2m facility, drawn early 2028 when the robots are installed; capital 2029-2046)"},
+      {"id": "L3", "name": "Working capital facility (overdraft/revolving, £350k limit, £300k drawn)", "amount": 300, "year": 3, "rate": 0.0775, "term_years": 8, "grace_years": 3, "schedule": [0, 0, 0, 0, 0, 60, 60, 60, 60, 60], "source": "A-21 (herd build-up, grant bridging and liquidity buffer; Bank Rate + 4%; reduced by £60k a year from 2031 out of surplus cash; £50k of undrawn headroom plus the cash floor)"}
+    ],
+    "grants": [
+      {"year": 3, "amount": 300, "note": "Defra capital grants - slurry infrastructure (covered store, separator) and productivity equipment; lower end of the £300-400k indicated; paid on completion claim in 2028 [A-19 - scheme availability unconfirmed, see S-13 S-14 S-15]"}
+    ],
+    "dividend_payout": 0.0,
+    "use_of_funds": [
+      {"name": "600-cow cubicle shed and groundworks", "amount": 1450},
+      {"name": "Robotic milking system (10 units) and dairy plant", "amount": 1200},
+      {"name": "Covered slurry store", "amount": 350},
+      {"name": "Slurry separator and handling", "amount": 100},
+      {"name": "Herd build-up and working capital (2026-30)", "amount": 250}
+    ]
+  },
+  "tax": {
+    "income_tax_rate": 0.28,
+    "opening_loss_carryforward": 0,
+    "notes": "Partnership: no corporation tax. 28% is a blended estimate of partners' income tax and Class 4 NIC on taxable profit [A-09]. Annual Investment Allowance (£1m) on robots/separator would cut tax in 2027-29 - not modelled (prudent)."
+  },
+  "valuation": {
+    "discount_rate": 0.06,
+    "terminal_method": "none",
+    "ebitda_multiple": 0,
+    "terminal_growth": 0.0
+  },
+  "min_cash": 50,
+  "monthly_year1": {
+    "year_index": 2,
+    "seasonality": [0.080, 0.075, 0.085, 0.086, 0.090, 0.087, 0.086, 0.084, 0.080, 0.082, 0.080, 0.085],
+    "collection_lag_months": 1,
+    "payment_lag_months": 1,
+    "equity_month": 3,
+    "loan_month": 3,
+    "grant_month": 12,
+    "capex_months": {"C1": 4, "C3": 6, "C4": 9, "C6": 6}
+  },
+  "opening_balance": {
+    "cash": 190,
+    "accounts_receivable": 175,
+    "inventory": 560,
+    "other_current_assets": 0,
+    "fixed_assets_net": 2380,
+    "fixed_assets_remaining_life": 24,
+    "accounts_payable": 135,
+    "loans": 560,
+    "loan_rate": 0.065,
+    "loan_remaining_years": 9,
+    "paid_in_capital": 2610,
+    "capital_reserve": 0,
+    "retained_earnings": 0
+  },
+  "sources": [
+    {"id": "F-01", "content": "FY2025 turnover £2,040k (milk c.82%), cost of sales £1,325k, overheads £440k, net profit before tax £275k", "source": "farm_accounts_summary.csv supplied by the partnership", "grade": "A", "confidence": "High", "impact": "Ch.2, 11.9; opening balance; cost base", "confirm": "No"},
+    {"id": "F-02", "content": "Balance sheet at FY2025 year-end: cash £190k, debtors £175k, stock £560k, fixed assets £2,380k, creditors £135k, bank loan £560k, partners' capital £2,610k (balances exactly)", "source": "farm_accounts_summary.csv", "grade": "A", "confidence": "High", "impact": "opening_balance", "confirm": "No"},
+    {"id": "A-03", "content": "Milk price 37.0ppl (2026 est.), 39.0ppl (2027), 40.0ppl (2028+), constant prices", "source": "Defra UK average 38.45ppl Sep 2026, 33.99ppl Apr 2026 trough, 46.56ppl Oct 2025 peak (S-01, S-02, S-05); AHDB Oct 2026 outlook (S-04)", "grade": "B", "confidence": "Medium", "impact": "R1 price; every financial conclusion", "confirm": "Yes"},
+    {"id": "A-17", "content": "New loan 6.25% = Bank Rate 3.75% + 2.5% margin; two-stage drawdown £1.5m (2027) + £0.7m (2028)", "source": "Bank of England Bank Rate 3.75% held 17 Sep 2026 (S-07); margin assumed from the existing facility (base + 2.25%)", "grade": "B", "confidence": "Medium", "impact": "financing.loans[0..1]", "confirm": "Yes"},
+    {"id": "A-18", "content": "20-year term with 24-month capital holiday (recommended) instead of the 15-year term first proposed", "source": "Model test: 15-year term gives DSCR 1.06 in 2029 and negative cash 2029-32 at 40ppl", "grade": "D", "confidence": "Medium", "impact": "financing.loans term_years; chapter 12", "confirm": "Yes"},
+    {"id": "A-21", "content": "Working capital facility £350k limit, £300k drawn 2028, Bank Rate + 4%, repaid £60k a year 2031-35", "source": "Model test: without it closing cash falls to c.-£190k in 2029", "grade": "D", "confidence": "Medium", "impact": "financing.loans[2]", "confirm": "Yes"},
+    {"id": "A-19", "content": "Grants £300k received 2028", "source": "User indication £300-400k; scheme status: SIG rounds 1-2 closed, IFP last round 2024, FETF 2026 max £25k/theme (S-13, S-14, S-15)", "grade": "C", "confidence": "Low", "impact": "financing.grants", "confirm": "Yes"},
+    {"id": "A-20", "content": "Partners introduce £350k private capital in 2027", "source": "Inferred from 'the rest is our own funds' vs £190k business cash", "grade": "D", "confidence": "Low", "impact": "financing.equity", "confirm": "Yes"}
+  ]
+}

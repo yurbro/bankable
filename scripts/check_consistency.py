@@ -271,9 +271,11 @@ def main():
     ap.add_argument("-o", "--report", default="consistency_report.md")
     ap.add_argument("--tolerance", type=float, default=0.006)
     ap.add_argument("--extra", nargs="*", default=[], help="其他数值来源 JSON（如 sensitivity_outputs.json）")
+    ap.add_argument("--lang", default="zh", choices=["zh", "en"], help="报告语言")
     args = ap.parse_args()
+    EN = args.lang == "en"
 
-    text = load_text(args.doc)
+    text = load_text(args.doc).replace("\u2212", "-").replace("\u2013", "-")  # Unicode minus / en dash → hyphen
     with open(args.outputs, encoding="utf-8") as f:
         o = json.load(f)
     unit = o.get("unit", "万元")
@@ -282,34 +284,50 @@ def main():
     years = o["years"]
 
     first_i = next((i for i, v in enumerate(s["revenue"]) if v), 0)  # 建设期无收入时取首个经营年
+    T = {
+        "first_rev": ("首个经营年（{y}）营业收入", "Revenue in first operating year ({y})"), "last_rev": ("末年（{y}）营业收入", "Final-year ({y}) revenue"), "last_ni": ("末年（{y}）净利润", "Final-year ({y}) net income"),
+        "funding": ("股权投入合计 / 借款合计 / 外部资金合计（至少一项）", "Total equity / total loans / total external funding (at least one)"),
+        "cash": ("最低期末现金或资金缺口或峰值资金需求（至少一项）", "Minimum closing cash, funding gap or peak funding need (at least one)"), "gm": ("末年毛利率", "Final-year gross margin"),
+        "irr": ("项目 IRR（含期末价值）", "Project IRR (with terminal value)"), "dscr_op": ("经营期最低 DSCR（两位小数）", "Minimum operating DSCR (2 dp)"), "dscr": ("最低 DSCR（两位小数）", "Minimum DSCR (2 dp)"),
+        "down": ("下行情景末年收入或累计净利润或最低现金（至少一项）", "Downside final-year revenue, cumulative net income or minimum cash (at least one)"),
+        "title": ("# 数字一致性核对报告", "# Narrative-vs-model consistency report"), "files": ("正文：`{a}`　模型输出：`{b}`", "Text: `{a}`   Model output: `{b}`"), "sec1": ("## 一、必提数字", "## 1. Required figures"),
+        "found": ("- ✅ {l}：正文出现 `{h}`", "- ✅ {l}: found `{h}`"), "missing": ("- ❌ {l}：正文未出现（模型值形如 {ex}）", "- ❌ {l}: not found (model value looks like {ex})"),
+        "sec2": ("## 二、财务相关章节中与模型对不上的数字（需复核）", "## 2. Figures in financial chapters that do not match the model (review)"),
+        "scan": ("扫描了 {n} 个带单位的数字，其中 {s} 个紧跟来源/登记册标记已跳过。下列数字在模型输出（含派生值与 --extra 文件）中找不到对应值（容差 {t}）。来自行业数据的数字属正常，但预测类数字必须来自模型：",
+                 "Scanned {n} figures with units; {s} immediately followed by a source/register tag were skipped. The figures below have no match in the model output (incl. derived values and --extra files) within tolerance {t}. Industry data is fine, but any forecast figure must come from the model:"),
+        "none": ("- （无）", "- (none)"), "sec3": ("## 三、结论", "## 3. Conclusion"), "ok": ("✅ 必提数字齐全。", "✅ All required figures present."), "miss": ("❌ 有 {m} 项必提数字缺失，请补充或核对口径。", "❌ {m} required figure(s) missing — add them or check the basis."),
+        "review": (" 另有 {k} 处数字需人工复核。", " {k} figure(s) need manual review."),
+    }
+    def t(key, **kw):
+        return T[key][1 if EN else 0].format(**kw)
     required = [
-        (f"首个经营年（{years[first_i]}）营业收入", money_variants(s["revenue"][first_i], unit)),
-        (f"末年（{years[-1]}）营业收入", money_variants(s["revenue"][-1], unit)),
-        (f"末年（{years[-1]}）净利润", money_variants(s["net_income"][-1], unit)),
-        ("股权投入合计 / 借款合计 / 外部资金合计（至少一项）", money_variants(sm.get("total_equity_in"), unit) | money_variants(sm.get("total_loan_drawdown"), unit) | money_variants((sm.get("total_equity_in") or 0) + (sm.get("total_loan_drawdown") or 0), unit)),
-        ("最低期末现金或资金缺口或峰值资金需求（至少一项）", money_variants(sm.get("min_cash_balance"), unit) | money_variants(sm.get("funding_gap"), unit) | money_variants(d.get("peak_funding_need"), unit)),
-        (f"末年毛利率", pct_variants(s["gross_margin"][-1])),
+        (t("first_rev", y=years[first_i]), money_variants(s["revenue"][first_i], unit)),
+        (t("last_rev", y=years[-1]), money_variants(s["revenue"][-1], unit)),
+        (t("last_ni", y=years[-1]), money_variants(s["net_income"][-1], unit)),
+        (t("funding"), money_variants(sm.get("total_equity_in"), unit) | money_variants(sm.get("total_loan_drawdown"), unit) | money_variants((sm.get("total_equity_in") or 0) + (sm.get("total_loan_drawdown") or 0), unit) | money_variants((sm.get("total_equity_in") or 0) + (sm.get("total_loan_drawdown") or 0) + (sm.get("total_grant_in") or 0), unit)),
+        (t("cash"), money_variants(sm.get("min_cash_balance"), unit) | money_variants(sm.get("funding_gap"), unit) | money_variants(d.get("peak_funding_need"), unit)),
+        (t("gm"), pct_variants(s["gross_margin"][-1])),
     ]
     if sm.get("irr_with_tv") is not None:
-        required.append(("项目 IRR（含期末价值）", pct_variants(sm["irr_with_tv"])))
+        required.append((t("irr"), pct_variants(sm["irr_with_tv"])))
     if d.get("dscr_min_operating") is not None:
-        required.append(("经营期最低 DSCR（两位小数）", {(f"{d['dscr_min_operating']:.2f}", False)}))
+        required.append((t("dscr_op"), {(f"{d['dscr_min_operating']:.2f}", False)}))
     elif sm.get("dscr_min") is not None and d.get("dscr_by_year"):
-        required.append(("最低 DSCR（两位小数）", {(f"{sm['dscr_min']:.2f}", False)}))
+        required.append((t("dscr"), {(f"{sm['dscr_min']:.2f}", False)}))
     if "downside" in o["scenarios"]:
         ds = o["scenarios"]["downside"]
-        required.append(("下行情景末年收入或累计净利润或最低现金（至少一项）", money_variants(ds["series"]["revenue"][-1], unit) | money_variants(ds["summary"].get("total_net_income"), unit) | money_variants(ds["summary"].get("min_cash_balance"), unit) | money_variants(ds["summary"].get("funding_gap"), unit)))
+        required.append((t("down"), money_variants(ds["series"]["revenue"][-1], unit) | money_variants(ds["summary"].get("total_net_income"), unit) | money_variants(ds["summary"].get("min_cash_balance"), unit) | money_variants(ds["summary"].get("funding_gap"), unit)))
 
-    lines = ["# 数字一致性核对报告", "", f"正文：`{os.path.basename(args.doc)}`　模型输出：`{os.path.basename(args.outputs)}`", "", "## 一、必提数字"]
+    lines = [t("title"), "", t("files", a=os.path.basename(args.doc), b=os.path.basename(args.outputs)), "", t("sec1")]
     missing = 0
     for label, variants in required:
         hit = find_in_text(text, variants)
         if hit:
-            lines.append(f"- ✅ {label}：正文出现 `{hit}`")
+            lines.append(t("found", l=label, h=hit))
         else:
             missing += 1
-            ex = sorted((t[0] + ("亿" if t[1] is True else (" million" if t[1] == "million" else "")) for t in variants if t[1] is not True), key=len)[:3]
-            lines.append(f"- ❌ {label}：正文未出现（模型值形如 {', '.join(ex)}）")
+            ex = sorted((tt[0] + ("亿" if tt[1] is True else (" million" if tt[1] == "million" else "")) for tt in variants if tt[1] is not True), key=len)[:3]
+            lines.append(t("missing", l=label, ex=", ".join(ex)))
 
     # 可疑数字扫描：限定在财务相关章节
     money_vals, pct_vals, ratio_vals = collect_model_numbers(o)
@@ -354,13 +372,12 @@ def main():
             cands = [cand]
             if (u or "") == "" and _is_thousand_unit(unit):
                 cands.append(v / 1000)  # "£450,000" 写成全额
-            ok = any(abs(c - mv) <= max(args.tolerance * abs(mv), 0.6) for c in cands for mv in money_vals if mv is not None)
+            ok = any(abs(abs(c) - abs(mv)) <= max(args.tolerance * abs(mv), 0.6) for c in cands for mv in money_vals if mv is not None)
         if not ok:
             ctx_start = max(0, m.start() - 25)
             ctx = scan[ctx_start:m.end() + 15].replace("\n", " ")
             suspicious.append(f"`{raw}{u}` … {ctx}")
-    lines += ["", "## 二、财务相关章节中与模型对不上的数字（需复核）", "",
-              f"扫描了 {checked} 个带单位的数字，其中 {sourced} 个紧跟来源/登记册标记已跳过。下列数字在模型输出（含派生值与 --extra 文件）中找不到对应值（容差 {args.tolerance:.1%}）。来自行业数据的数字属正常，但预测类数字必须来自模型："]
+    lines += ["", t("sec2"), "", t("scan", n=checked, s=sourced, t=f"{args.tolerance:.1%}")]
     if suspicious:
         seen = set()
         for sline in suspicious:
@@ -370,8 +387,8 @@ def main():
             seen.add(key)
             lines.append(f"- {sline}")
     else:
-        lines.append("- （无）")
-    lines += ["", "## 三、结论", "", ("✅ 必提数字齐全。" if missing == 0 else f"❌ 有 {missing} 项必提数字缺失，请补充或核对口径。") + (f" 另有 {len(suspicious)} 处数字需人工复核。" if suspicious else "")]
+        lines.append(t("none"))
+    lines += ["", t("sec3"), "", (t("ok") if missing == 0 else t("miss", m=missing)) + (t("review", k=len(suspicious)) if suspicious else "")]
     report = "\n".join(lines)
     with open(args.report, "w", encoding="utf-8") as f:
         f.write(report)
