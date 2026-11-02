@@ -1,0 +1,29 @@
+name: smoke-test
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["docs/**", "samples/**", "*.md"]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install LibreOffice and CJK fonts
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libreoffice-calc libreoffice-writer fonts-noto-cjk > /dev/null
+      - name: Install Python deps
+        run: pip install -q openpyxl python-docx python-pptx matplotlib
+      - name: Run smoke test
+        run: bash tests/smoke_test.sh "$RUNNER_TEMP/bankable-smoke"
+      - name: Package skill
+        run: bash tests/package.sh "$RUNNER_TEMP/bankable.skill"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bankable.skill
+          path: ${{ runner.temp }}/bankable.skill

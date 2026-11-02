@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: gov-and-board-bilingual
+expected_outcome: |
+  A multi-audience plan: one master Chinese .docx that covers government-application needs (policy basis chapter,
+  total investment and funding sources table with matching funds, economic/social/environmental benefit indicators,
+  performance targets, implementation schedule) and board-decision needs (decision request, alternatives comparison,
+  NPV/IRR/payback with sensitivity), plus an English .docx adapted (not literally translated) with the same numbers,
+  an Excel model, and a ~12-slide .pptx. Company and team details are left as [待补充]; policy references are cited
+  with document names or marked 待核实.

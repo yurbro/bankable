@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: investor-bp-from-brief
+expected_outcome: |
+  A complete investor-oriented business plan (Chinese .docx) plus an Excel three-statement financial model
+  with scenarios, built from an assumptions file. Missing information is handled with explicitly labelled
+  assumptions (registered with IDs) rather than invented facts; a register of assumptions/evidence is delivered;
+  financial figures in the narrative match the model outputs; the final message lists what the user must confirm
+  and the key model checks (funding need, minimum cash, IRR).

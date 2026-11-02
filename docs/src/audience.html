@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<style>
+  :root { --ink:#0b1220; --muted:#5b6475; --blue:#2a78d6; --orange:#eb6834; --aqua:#1baf7a; --yellow:#eda100; --line:#d6dbe4; }
+  * { box-sizing:border-box; }
+  body { margin:0; width:1600px; background:#fff; font-family:"Noto Sans CJK SC","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif; color:var(--ink); }
+  .wrap { padding:44px 56px 40px; }
+  h2 { margin:0 0 6px; font-size:34px; font-weight:800; }
+  .lead { color:var(--muted); font-size:20px; margin:0 0 28px; }
+  .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; }
+  .card { border:1.5px solid var(--line); border-radius:18px; padding:20px 22px 18px; background:#fff; }
+  .card h3 { margin:0 0 4px; font-size:24px; display:flex; align-items:center; gap:10px; }
+  .dot { width:14px; height:14px; border-radius:50%; display:inline-block; }
+  .q { font-size:19px; font-weight:700; margin:10px 0 12px; line-height:1.4; }
+  .q small { display:block; font-weight:500; color:var(--muted); font-size:14px; margin-bottom:2px; }
+  ul { margin:0; padding-left:18px; font-size:16px; line-height:1.6; color:#223; }
+  .kpi { margin-top:12px; padding-top:10px; border-top:1px dashed var(--line); font-size:15px; color:var(--muted); line-height:1.5; }
+  .kpi b { color:var(--ink); margin-right:6px; }
+  .note { margin-top:22px; border-radius:14px; background:#f6f7f9; padding:14px 18px; font-size:17px; line-height:1.55; }
+  .note b { color:var(--blue); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h2>按读者切换：同一个模型，不同的章节权重与指标</h2>
+  <p class="lead">先定主读者，决定执行摘要的第一句话和哪些章节展开；其他读者用定制执行摘要 + 专章/附录覆盖。绝不为不同读者做两套数字。</p>
+  <div class="grid">
+    <div class="card">
+      <h3><span class="dot" style="background:var(--blue)"></span>股权投资人</h3>
+      <div class="q"><small>第一个问题</small>为什么这是个好生意、为什么是你、为什么是现在？</div>
+      <ul><li>自下而上的 TAM / SAM / SOM</li><li>壁垒与竞争矩阵</li><li>单位经济与进展（traction）</li><li>资金用途、里程碑、估值逻辑</li></ul>
+      <div class="kpi"><b>指标</b>收入 CAGR · 毛利率 · EBITDA 转正年 · CAC/LTV · runway · IRR（含期末价值）</div>
+    </div>
+    <div class="card">
+      <h3><span class="dot" style="background:var(--orange)"></span>银行 / 贷款机构</h3>
+      <div class="q"><small>第一个问题</small>钱怎么还？还不上怎么办？</div>
+      <ul><li>还款来源与逐年偿债覆盖</li><li>借款人资质、历史财务</li><li>用途、担保与风险缓释</li><li>保守情景与 12 个月现金流</li></ul>
+      <div class="kpi"><b>指标</b>DSCR ≥ 1.2–1.5 · 利息保障倍数 · 资产负债率 · 最低现金 · 下行情景偿债能力</div>
+    </div>
+    <div class="card">
+      <h3><span class="dot" style="background:var(--aqua)"></span>政府申报 / 园区</h3>
+      <div class="q"><small>第一个问题</small>为什么值得支持？符合哪项政策、带来什么效益？</div>
+      <ul><li>政策依据（文件名与条款）</li><li>建设内容、总投资与资金筹措（含配套）</li><li>经济 / 社会 / 环境效益量化</li><li>绩效目标与实施进度</li></ul>
+      <div class="kpi"><b>指标</b>总投资 · 投资强度 · 达产产值与税收 · 新增就业 · 能耗与排放 · 回收期 · 配套比例</div>
+    </div>
+    <div class="card">
+      <h3><span class="dot" style="background:var(--yellow)"></span>董事会 / 合作伙伴</h3>
+      <div class="q"><small>第一个问题</small>该不该做？要什么资源？不做会怎样？做砸了怎么办？</div>
+      <ul><li>一句话决策请求</li><li>备选方案比较（含不做）</li><li>资源与预算、决策点</li><li>风险与止损条件</li></ul>
+      <div class="kpi"><b>指标</b>NPV · IRR · 回收期 · 峰值资金占用 · 敏感性 ±20% · 对公司现金的影响</div>
+    </div>
+  </div>
+  <div class="note"><b>多读者</b>一份主文档按主读者写全 → 每类次要读者一页定制执行摘要 → 银行版加"偿债能力与担保"、政府版加"政策依据 + 效益与绩效表"、董事会版加"方案比较与决策请求"。</div>
+</div>
+</body>
+</html>

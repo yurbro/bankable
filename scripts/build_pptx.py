@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+"""
+build_pptx.py — 把 deck.md 做成简洁的路演 PPT（环境里有更强的 pptx skill 时优先用那个，本脚本是通用备选）。
+
+用法:
+    python build_pptx.py deck.md -o "项目-路演PPT-2026-11.pptx" [--lang zh|en] [--accent 2F5496]
+
+deck.md 格式（每页以 # 开头）:
+    # 封面标题            ← 第一页为封面；下一行 "## 副标题" 可选；"组织/日期" 写成普通行
+    # 页面标题
+    要点一                 ← 普通行或 "- 要点" 都作为要点
+    - 要点二
+    ![](charts/revenue_profit.png)   ← 图片放右侧（有图时要点在左）
+    > 讲稿备注              ← 进入演讲者备注
+    ---                      ← 可选的分隔，忽略
+"""
+import argparse
+import os
+import re
+
+from pptx import Presentation
+from pptx.dml.color import RGBColor
+from pptx.enum.text import PP_ALIGN
+from pptx.util import Cm, Pt
+
+FONT = {"zh": "微软雅黑", "en": "Calibri"}
+
+
+def parse_deck(md):
+    slides = []
+    cur = None
+    for line in md.splitlines():
+        s = line.rstrip()
+        if s.startswith("# "):
+            cur = {"title": s[2:].strip(), "subtitle": None, "bullets": [], "image": None, "notes": []}
+            slides.append(cur)
+            continue
+        if cur is None:
+            continue
+        if s.startswith("## "):
+            cur["subtitle"] = s[3:].strip()
+        elif s.strip().startswith(">"):
+            cur["notes"].append(s.strip().lstrip(">").strip())
+        else:
+            m = re.match(r"^!\[(.*?)\]\((.*?)\)", s.strip())
+            if m:
+                cur["image"] = m.group(2).strip()
+            elif s.strip() in ("", "---"):
+                continue
+            else:
+                indent = len(s) - len(s.lstrip())
+                txt = re.sub(r"^[-*•]\s+|^\d+[.)]\s+", "", s.strip())
+                cur["bullets"].append((1 if indent >= 2 else 0, txt))
+    return slides
+
+
+def add_text(frame, text, size, bold=False, color=None, font="微软雅黑", align=None, level=0):
+    frame.word_wrap = True
+    p = frame.paragraphs[0] if (len(frame.paragraphs) == 1 and not frame.paragraphs[0].text) else frame.add_paragraph()
+    p.level = level
+    p.alignment = align or PP_ALIGN.LEFT
+    r = p.add_run()
+    r.text = text
+    r.font.size = Pt(size)
+    r.font.bold = bold
+    r.font.name = font
+    if color:
+        r.font.color.rgb = RGBColor.from_string(color)
+    p.space_after = Pt(8)
+    return p
+
+
+def build(slides, out, lang, accent, base_dir):
+    prs = Presentation()
+    prs.slide_width, prs.slide_height = Cm(33.867), Cm(19.05)  # 16:9
+    blank = prs.slide_layouts[6]
+    font = FONT[lang]
+    W, H = prs.slide_width, prs.slide_height
+    for idx, sd in enumerate(slides):
+        slide = prs.slides.add_slide(blank)
+        if idx == 0:
+            bg = slide.shapes.add_shape(1, 0, 0, W, H)
+            bg.fill.solid()
+            bg.fill.fore_color.rgb = RGBColor.from_string(accent)
+            bg.line.fill.background()
+            tb = slide.shapes.add_textbox(Cm(2.5), Cm(6), W - Cm(5), Cm(4))
+            add_text(tb.text_frame, sd["title"], 40, bold=True, color="FFFFFF", font=font)
+            if sd["subtitle"]:
+                add_text(tb.text_frame, sd["subtitle"], 20, color="E8EEF8", font=font)
+            if sd["bullets"]:
+                tb2 = slide.shapes.add_textbox(Cm(2.5), Cm(13), W - Cm(5), Cm(4))
+                for _, b in sd["bullets"]:
+                    add_text(tb2.text_frame, b, 14, color="E8EEF8", font=font)
+        else:
+            bar = slide.shapes.add_shape(1, 0, 0, Cm(0.6), H)
+            bar.fill.solid()
+            bar.fill.fore_color.rgb = RGBColor.from_string(accent)
+            bar.line.fill.background()
+            tb = slide.shapes.add_textbox(Cm(2), Cm(1.2), W - Cm(4), Cm(2.2))
+            add_text(tb.text_frame, sd["title"], 28, bold=True, color="1A1A1A", font=font)
+            has_img = sd["image"] and os.path.exists(sd["image"] if os.path.isabs(sd["image"]) else os.path.join(base_dir, sd["image"]))
+            body_w = (W - Cm(4)) * (0.48 if has_img else 1)
+            body = slide.shapes.add_textbox(Cm(2), Cm(4), body_w, H - Cm(6))
+            tf = body.text_frame
+            tf.word_wrap = True
+            if sd["subtitle"]:
+                add_text(tf, sd["subtitle"], 16, color="52514E", font=font)
+            for level, b in sd["bullets"]:
+                p = add_text(tf, ("• " if level == 0 else "– ") + b, 18 if level == 0 else 15, color="1A1A1A", font=font, level=level)
+            if has_img:
+                path = sd["image"] if os.path.isabs(sd["image"]) else os.path.join(base_dir, sd["image"])
+                slide.shapes.add_picture(path, Cm(2) + body_w + Cm(0.8), Cm(4.2), width=W - Cm(4) - body_w - Cm(0.8))
+            num = slide.shapes.add_textbox(W - Cm(3), H - Cm(1.4), Cm(2), Cm(1))
+            add_text(num.text_frame, str(idx + 1), 10, color="999999", font=font, align=PP_ALIGN.RIGHT)
+        if sd["notes"]:
+            slide.notes_slide.notes_text_frame.text = "\n".join(sd["notes"])
+    prs.save(out)
+    print(f"[OK] PPT 已生成：{out}（{len(slides)} 页）")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("deck")
+    ap.add_argument("-o", "--output", required=True)
+    ap.add_argument("--lang", default="zh", choices=["zh", "en"])
+    ap.add_argument("--accent", default="2F5496")
+    args = ap.parse_args()
+    with open(args.deck, encoding="utf-8") as f:
+        slides = parse_deck(f.read())
+    if not slides:
+        raise SystemExit("deck.md 中没有以 # 开头的页面")
+    build(slides, args.output, args.lang, args.accent, os.path.dirname(os.path.abspath(args.deck)))
+
+
+if __name__ == "__main__":
+    main()

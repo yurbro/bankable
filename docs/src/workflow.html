@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<style>
+  :root { --ink:#0b1220; --muted:#5b6475; --blue:#2a78d6; --orange:#eb6834; --aqua:#1baf7a; --line:#d6dbe4; }
+  * { box-sizing:border-box; }
+  body { margin:0; width:1600px; background:#fff; font-family:"Noto Sans CJK SC","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif; color:var(--ink); }
+  .wrap { padding:44px 56px 36px; }
+  h2 { margin:0 0 6px; font-size:34px; font-weight:800; }
+  .lead { color:var(--muted); font-size:20px; margin:0 0 30px; }
+  .steps { display:grid; grid-template-columns:repeat(8, 1fr); gap:14px; position:relative; }
+  .step { border:1.5px solid var(--line); border-radius:16px; padding:16px 14px 14px; background:#fff; min-height:208px; position:relative; }
+  .step .n { position:absolute; top:-14px; left:14px; width:30px; height:30px; border-radius:50%; background:var(--ink); color:#fff; font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .step h3 { margin:8px 0 8px; font-size:21px; }
+  .step p { margin:0; font-size:15px; line-height:1.5; color:var(--muted); }
+  .step.model { border-color:var(--blue); background:#f3f8ff; }
+  .step.model h3 { color:var(--blue); }
+  .step.check { border-color:var(--orange); background:#fff6f1; }
+  .step.check h3 { color:var(--orange); }
+  .loop { margin-top:22px; display:flex; align-items:center; gap:14px; }
+  .loop .bar { flex:1; height:3px; background:linear-gradient(90deg, var(--blue), var(--orange)); border-radius:2px; position:relative; }
+  .loop .bar:after { content:""; position:absolute; right:-2px; top:-6px; border:8px solid transparent; border-left:12px solid var(--orange); }
+  .loop span { font-size:17px; color:var(--ink); white-space:nowrap; }
+  .loop b { color:var(--blue); }
+  .rules { margin-top:26px; display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .rule { border-radius:14px; padding:16px 18px; background:#f6f7f9; font-size:17px; line-height:1.55; }
+  .rule b { display:block; font-size:18px; margin-bottom:4px; }
+  .tags { margin-top:8px; font-size:15px; color:var(--muted); }
+  code { font-family:ui-monospace, Menlo, Consolas, monospace; background:#eef1f5; padding:1px 6px; border-radius:6px; font-size:14px; color:#1f2a3a; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h2>工作流程：数字先于故事</h2>
+  <p class="lead">八步，每步只加载当时需要的参考文件；财务模型先跑通，叙述只能引用模型算出的数字。</p>
+  <div class="steps">
+    <div class="step"><div class="n">0</div><h3>盘点</h3><p>读完全部素材；定主读者、阶段、产出、环境能力</p></div>
+    <div class="step"><div class="n">1</div><h3>访谈</h3><p>一轮、最多 8 问，只问素材里没有的；用户不在就按稳妥假设推进</p></div>
+    <div class="step"><div class="n">2</div><h3>登记册</h3><p>F 事实 / A 假设 / E 推断 / T 待补充，来源、证据等级、置信度、需确认</p></div>
+    <div class="step"><div class="n">3</div><h3>研究</h3><p>官方统计、政策原文、可比公司年报；自下而上测市场；来源标 [S-n]</p></div>
+    <div class="step model"><div class="n">4</div><h3>建模</h3><p>assumptions.json → Excel 三表 → LibreOffice 重算 → 三情景 + 敏感性 → model_outputs.json</p></div>
+    <div class="step"><div class="n">5</div><h3>起草</h3><p>按读者权重写 15 章；主张标 [A-xx][S-n]；数字只来自模型输出</p></div>
+    <div class="step check"><div class="n">6</div><h3>核对评审</h3><p>脚本核对正文 vs 模型；投资人 / 信贷 / 政府 / CFO 四视角红队提问；评审备忘</p></div>
+    <div class="step"><div class="n">7</div><h3>交付</h3><p>Word（中/英）、Excel、PPT、登记册 + 交付说明：待确认假设、待补充项、模型结论、局限</p></div>
+  </div>
+  <div class="loop"><span><b>迭代</b>：章节写作中发现新约束（产能、账期、合规时间）→ 改假设 → 重跑第 4 步 → 更新正文</span><div class="bar"></div><span>改假设永远不手改输出</span></div>
+  <div class="rules">
+    <div class="rule"><b>不编造</b>公司历史、客户、合同、资质、团队履历只来自用户材料，缺就标 <code>[待补充]</code>；市场与政策数据必须有来源，拿不到就标 <code>[待核实]</code>。</div>
+    <div class="rule"><b>数字自洽</b>资产负债表自动平衡；正文财务数字 = 模型输出；<code>check_consistency.py</code> 抓出模型里没有的"预测数字"。</div>
+    <div class="rule"><b>按读者切换</b>同一个模型，不同读者看不同指标：投资人 CAGR / IRR，银行 DSCR / 下行情景，政府效益与绩效指标，董事会 NPV / 备选方案。</div>
+  </div>
+</div>
+</body>
+</html>

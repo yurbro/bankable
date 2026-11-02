@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+work/
+build/
+*.skill
+.DS_Store
+~$*

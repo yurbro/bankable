@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<style>
+  :root { --ink:#0b1220; --muted:#5b6475; --blue:#2a78d6; --orange:#eb6834; --aqua:#1baf7a; --yellow:#eda100; --line:#d6dbe4; }
+  * { box-sizing:border-box; }
+  body { margin:0; width:1600px; background:#fff; font-family:"Noto Sans CJK SC","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif; color:var(--ink); }
+  .wrap { padding:44px 56px 40px; }
+  h2 { margin:0 0 6px; font-size:34px; font-weight:800; }
+  .lead { color:var(--muted); font-size:20px; margin:0 0 26px; }
+  .grid { display:grid; grid-template-columns: 1.15fr 1fr 1fr; gap:20px; }
+  .col { display:flex; flex-direction:column; gap:16px; }
+  .panel { border:1.5px solid var(--line); border-radius:16px; overflow:hidden; background:#fff; box-shadow:0 6px 18px rgba(11,18,32,.05); }
+  .panel .h { padding:10px 14px; font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--line); background:#fafbfc; }
+  .panel .h .t { font-size:12px; font-weight:600; color:#fff; padding:2px 8px; border-radius:6px; letter-spacing:.5px; }
+  .panel img { display:block; width:100%; }
+  .pages { display:flex; gap:10px; padding:12px; background:#eef1f5; }
+  .pages img { width:calc((100% - 20px)/3); border:1px solid #cfd5df; box-shadow:0 3px 8px rgba(0,0,0,.08); }
+  .b { background:var(--blue);} .o { background:var(--orange);} .a { background:var(--aqua);} .y { background:var(--yellow);}
+  .reg { padding:12px 14px; font-size:14px; line-height:1.5; color:#1f2a3a; background:#fbfbfc; }
+  .reg td:first-child, .reg th:first-child { white-space:nowrap; font-family:ui-monospace, Menlo, Consolas, monospace; }
+  .reg table { border-collapse:collapse; width:100%; }
+  .reg th, .reg td { border:1px solid #e1e5ec; padding:4px 6px; text-align:left; vertical-align:top; }
+  .reg th { background:#eef1f5; font-weight:700; }
+  .reg .y { background:#fff6d6; color:#8a5a00; }
+  .sheet { padding:12px 14px; font-size:14px; font-variant-numeric: tabular-nums; }
+  .sheet table { border-collapse:collapse; width:100%; }
+  .sheet th, .sheet td { border:1px solid #e1e5ec; padding:4px 7px; text-align:right; }
+  .sheet th { background:#d9e1f2; text-align:center; }
+  .sheet td:first-child { text-align:left; }
+  .sheet .in { color:#0000ff; background:#fff9e5; }
+  .sheet .tot { background:#f2f2f2; font-weight:700; }
+  .cap { padding:8px 14px 10px; font-size:13px; color:var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h2>交付什么：四件东西互相勾稽</h2>
+  <p class="lead">示例来自一次完整试跑（虚构的杭州陶瓷膜案例，只给了一段公司简介）：47 页计划书、993 个公式的三表模型、登记册、评审备忘。</p>
+  <div class="grid">
+    <div class="col">
+      <div class="panel">
+        <div class="h"><span class="t b">WORD</span>商业计划书 · 封面 / 执行摘要 / 财务计划</div>
+        <div class="pages"><img src="page_cover.png"><img src="page_exec.png"><img src="page_finance.png"></div>
+        <div class="cap">14 章 + 附录三表；每个主张带 [A-xx] / [S-n] 标记，终稿可一键去除；[待补充] 提示用户补齐。</div>
+      </div>
+      <div class="panel">
+        <div class="h"><span class="t a">MARKDOWN</span>假设与证据登记册 · 用户只需逐条确认</div>
+        <div class="reg"><table>
+          <tr><th>编号</th><th>内容</th><th>来源 / 依据</th><th style="white-space:nowrap">等级</th><th style="white-space:nowrap">置信</th><th style="white-space:nowrap">需确认</th></tr>
+          <tr><td>F-04</td><td>2026 年签约合同收入约 180 万元</td><td>用户提供</td><td>A</td><td>高</td><td>否</td></tr>
+          <tr><td class="y">A-05</td><td class="y">标准组件出厂价 4.5 万元/件，年降 2%</td><td class="y">可比上市公司单价区间 [S2]</td><td class="y">B</td><td class="y">中</td><td class="y">是</td></tr>
+          <tr><td>E-02</td><td>国产供应链交付周期短于进口</td><td>由 [S7] 招股书推断</td><td>C</td><td>低</td><td>否</td></tr>
+          <tr><td>T-02</td><td>两家试用客户的通量、清洗周期数据</td><td>—</td><td>—</td><td>—</td><td>是</td></tr>
+        </table></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="panel">
+        <div class="h"><span class="t o">EXCEL</span>三表模型 · 假设表（蓝字输入）→ 利润表 / 现金流 / 资产负债表</div>
+        <div class="sheet"><table>
+          <tr><th style="text-align:left">利润表（万元）</th><th>2027</th><th>2028</th><th>2029</th><th>2030</th><th>2031</th></tr>
+          <tr><td>营业收入</td><td>726.0</td><td>2,339.4</td><td>4,522.8</td><td>6,751.1</td><td>8,930.9</td></tr>
+          <tr><td>毛利率</td><td>27.9%</td><td>31.4%</td><td>36.2%</td><td>38.8%</td><td>40.3%</td></tr>
+          <tr><td>EBITDA</td><td>-525.3</td><td>-181.1</td><td>145.3</td><td>748.2</td><td>1,401.4</td></tr>
+          <tr class="tot"><td>净利润</td><td>-645.3</td><td>-391.7</td><td>-120.9</td><td>413.7</td><td>1,065.7</td></tr>
+          <tr><td>期末现金</td><td>634.4</td><td>1,106.0</td><td>1,324.6</td><td>1,969.1</td><td>2,873.3</td></tr>
+          <tr><td>检查差额（应为 0）</td><td>0.00</td><td>0.00</td><td>0.00</td><td>0.00</td><td>0.00</td></tr>
+        </table></div>
+        <div class="cap">情景选择单元格填 1 / 2 / 3 全表重算；"情景对比"表由脚本写入三情景结果；月度现金流看第 1 年节奏。</div>
+      </div>
+      <div class="panel">
+        <div class="h"><span class="t o">EXCEL → PNG</span>三情景对比</div>
+        <img src="chart_scenarios.png">
+      </div>
+    </div>
+    <div class="col">
+      <div class="panel">
+        <div class="h"><span class="t b">图表</span>收入与净利润预测（正文引用）</div>
+        <img src="chart_revenue.png">
+      </div>
+      <div class="panel">
+        <div class="h"><span class="t y">敏感性</span>单因素龙卷风图：NPV 与最低现金</div>
+        <img src="chart_sensitivity.png">
+      </div>
+      <div class="panel">
+        <div class="h"><span class="t a">核对</span>check_consistency.py</div>
+        <div class="reg">✅ 首年（2027）营业收入：正文出现 `726.0`<br>✅ 末年（2031）净利润：正文出现 `1,065.7`<br>✅ 项目 IRR（含期末价值）：正文出现 `50.4%`<br>✅ 最低 DSCR（两位小数）：正文出现 `2.56`<br>⚠ 需复核 13 处（估值倍数、行业数据）</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,11 @@
+schema_version: "1.1"
+name: bank-loan-existing-farm
+expected_outcome: |
+  A lender-oriented Chinese business plan (.docx) and Excel model for an existing livestock cooperative taking a
+  5-year RMB 6m loan. The model starts from an opening balance sheet built from the CSV (existing business), includes
+  the existing RMB 2m loan and the new loan with an equal-principal schedule, and reports DSCR by year for base and
+  downside cases plus a 12-month cash flow. The document leads with repayment capacity, states loan elements
+  (amount, term, use, repayment source, collateral), and marks collateral/guarantee details as 待补充 rather than
+  inventing them.
+context:
+  scaffold_script: place-files.sh

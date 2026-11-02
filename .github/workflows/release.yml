@@ -1,0 +1,21 @@
+name: release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package skill
+        run: bash tests/package.sh "$RUNNER_TEMP/bankable.skill"
+      - name: Create release with the .skill file
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ runner.temp }}/bankable.skill
+          generate_release_notes: true
+          body: |
+            `bankable.skill` 可直接上传到 Claude.ai（设置 → 功能 → Skills → 上传）。
+            Claude Code 用户：`git clone https://github.com/yurbro/bankable.git ~/.claude/skills/bankable`
