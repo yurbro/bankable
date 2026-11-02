@@ -22,11 +22,9 @@ It delivers four things that reconcile with each other: a Word business plan (En
 
 ## Watch: Bankable in 80 seconds
 
-<p align="center">
-  <a href="docs/video/bankable-guide.mp4"><img src="docs/images/video_poster.jpg" alt="Watch the Bankable guide (1:21, voice-over, English + Chinese captions)" width="100%"></a>
-</p>
+https://github.com/user-attachments/assets/20f15602-1690-42ea-9930-e6c6e7314958
 
-<p align="center"><sub>Principles · install · how to ask · workflow · readers · deliverables · rerun — <a href="docs/video/bankable-guide.mp4">play the video</a> (1:21, voice-over, English + 中文 captions)</sub></p>
+<p align="center"><sub>Principles · install · how to ask · workflow · readers · deliverables · rerun — 1:21 · voice-over · English + 中文 captions · <a href="docs/video/bankable-guide.mp4">download</a></sub></p>
 
 ## Get started in three steps
 

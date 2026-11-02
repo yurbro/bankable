@@ -22,11 +22,9 @@
 
 ## 80 秒看懂 Bankable
 
-<p align="center">
-  <a href="docs/video/bankable-guide.mp4"><img src="docs/images/video_poster.jpg" alt="观看 Bankable 使用指导视频（1:21，英文配音，中英字幕）" width="100%"></a>
-</p>
+https://github.com/user-attachments/assets/20f15602-1690-42ea-9930-e6c6e7314958
 
-<p align="center"><sub>三条原则 · 安装 · 怎么提需求 · 八步流程 · 四类读者 · 交付成果 · 改假设重跑 —— <a href="docs/video/bankable-guide.mp4">播放视频</a>（1:21，英文配音，中英双语字幕）</sub></p>
+<p align="center"><sub>三条原则 · 安装 · 怎么提需求 · 八步流程 · 四类读者 · 交付成果 · 改假设重跑 —— 1:21 · 英文配音 · 中英双语字幕 · <a href="docs/video/bankable-guide.mp4">下载</a></sub></p>
 
 ## 三步上手
 

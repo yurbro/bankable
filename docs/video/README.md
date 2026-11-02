@@ -1,6 +1,6 @@
 # Guide video
 
-`bankable-guide.mp4` — 1:21, 1920×1080, English voice-over with burnt-in English + Chinese captions. The README shows `docs/images/video_poster.jpg` and links here.
+`bankable-guide.mp4` — 1:21, 1920×1080, English voice-over with burnt-in English + Chinese captions. Both READMEs embed it inline from a GitHub upload (user-attachments link), since GitHub only plays videos uploaded through its web editor; `docs/images/video_poster.jpg` is the poster frame. After rebuilding, drag the new mp4 into the README editor on GitHub and swap the link.
 
 Everything is code, so the video can be changed and rebuilt like the rest of the repo.
 
